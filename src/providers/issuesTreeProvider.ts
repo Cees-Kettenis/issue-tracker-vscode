@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import type { Issue, IssueGroup, IssuesFile } from '../models';
 import { createEmptyIssuesFile } from '../models';
-import { compareIssues } from '../utils/sorting';
 import { IssuesRepository } from '../services/issuesRepository';
 import { IssuesSettingsService } from '../services/settings';
 
@@ -77,7 +76,11 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeNode
         new TreeMessageItem(
           'No groups yet',
           'Create a group to start tracking issues.',
-          new vscode.ThemeIcon('symbol-folder')
+          new vscode.ThemeIcon('add'),
+          {
+            command: 'localIssues.createGroup',
+            title: 'Add Group',
+          }
         ),
       ];
     }
@@ -124,7 +127,7 @@ class IssueGroupTreeItem extends vscode.TreeItem {
       issues.length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
     );
     this.id = group.id;
-    this.contextValue = 'localIssuesGroup';
+    this.contextValue = group.id === '__ungrouped__' ? 'localIssuesUngrouped' : 'localIssuesGroup';
     this.iconPath = new vscode.ThemeIcon('folder');
     this.description = issues.length ? `${issues.length} issue${issues.length === 1 ? '' : 's'}` : 'Empty';
   }
@@ -132,10 +135,7 @@ class IssueGroupTreeItem extends vscode.TreeItem {
 
 class IssueTreeItem extends vscode.TreeItem {
   constructor(public readonly issue: Issue) {
-    super(
-      issue.title,
-      vscode.TreeItemCollapsibleState.None
-    );
+    super(`${priorityIndicator(issue.priority)} ${issue.title}`, vscode.TreeItemCollapsibleState.None);
 
     this.id = issue.id;
     this.contextValue = 'localIssuesIssue';
@@ -144,18 +144,24 @@ class IssueTreeItem extends vscode.TreeItem {
       title: 'Edit Issue',
       arguments: [issue.id],
     };
-    this.tooltip = `${issue.title}\n${issue.status} · ${issue.priority}\nUpdated ${issue.updatedAt}`;
-    this.description = `${issue.status}${issue.priority === 'medium' ? '' : ` · ${issue.priority}`}`;
-    this.iconPath = new vscode.ThemeIcon(issueStatusIcon(issue.status));
+    this.tooltip = buildIssueTooltip(issue);
+    this.description = undefined;
+    this.iconPath = new vscode.ThemeIcon(issueStatusIcon(issue.status), issueStatusColor(issue.status));
   }
 }
 
 class TreeMessageItem extends vscode.TreeItem {
-  constructor(label: string, description: string, iconPath: vscode.ThemeIcon) {
+  constructor(
+    label: string,
+    description: string,
+    iconPath: vscode.ThemeIcon,
+    command?: vscode.Command
+  ) {
     super(label, vscode.TreeItemCollapsibleState.None);
     this.description = description;
     this.iconPath = iconPath;
     this.contextValue = 'localIssuesMessage';
+    this.command = command;
   }
 }
 
@@ -169,10 +175,68 @@ function issueStatusIcon(status: Issue['status']): string {
       return 'check';
     case 'todo':
     default:
-      return 'circle-large-outline';
+      return 'clock';
   }
 }
 
+function issueStatusColor(status: Issue['status']): vscode.ThemeColor {
+  switch (status) {
+    case 'in-progress':
+      return new vscode.ThemeColor('charts.blue');
+    case 'blocked':
+      return new vscode.ThemeColor('charts.red');
+    case 'done':
+      return new vscode.ThemeColor('charts.green');
+    case 'todo':
+    default:
+      return new vscode.ThemeColor('charts.yellow');
+  }
+}
+
+function priorityIndicator(priority: Issue['priority']): string {
+  switch (priority) {
+    case 'low':
+      return '🟢';
+    case 'high':
+      return '🔴';
+    case 'medium':
+    default:
+      return '🟠';
+  }
+}
+
+function buildIssueTooltip(issue: Issue): vscode.MarkdownString {
+  const tooltip = new vscode.MarkdownString(undefined, true);
+  tooltip.supportThemeIcons = true;
+
+  if (issue.description.trim()) {
+    tooltip.appendMarkdown('---\n');
+    tooltip.appendMarkdown(issue.description);
+  } else {
+    tooltip.appendMarkdown('_No description yet._');
+  }
+
+  return tooltip;
+}
+
 function sortIssues(issues: Issue[]): Issue[] {
-  return [...issues].sort(compareIssues);
+  const priorityOrder: Record<Issue['priority'], number> = {
+    high: 0,
+    medium: 1,
+    low: 2,
+  };
+
+  return [...issues].sort((a, b) => {
+    const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+
+    const updatedDiff = b.updatedAt.localeCompare(a.updatedAt);
+    if (updatedDiff !== 0) {
+      return updatedDiff;
+    }
+
+    return a.title.localeCompare(b.title);
+  });
 }

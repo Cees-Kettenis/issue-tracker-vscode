@@ -28,31 +28,83 @@ export function registerIssueCommands(
   );
 
   disposables.push(
-    vscode.commands.registerCommand('localIssues.editIssue', async (issueId?: string) => {
-      await openIssueEditor(issueId, services);
+    vscode.commands.registerCommand('localIssues.editIssue', async (issueTarget?: unknown) => {
+      await openIssueEditor(issueTarget, services);
     })
   );
 
   disposables.push(
-    vscode.commands.registerCommand('localIssues.selectIssue', async (issueId?: string) => {
-      await openIssueEditor(issueId, services);
+    vscode.commands.registerCommand('localIssues.selectIssue', async (issueTarget?: unknown) => {
+      await openIssueEditor(issueTarget, services);
     })
   );
 
   disposables.push(
     vscode.commands.registerCommand('localIssues.createGroup', async () => {
-      const name = await vscode.window.showInputBox({
-        title: 'Create group',
-        prompt: 'Enter a group name.',
-        ignoreFocusOut: true,
-      });
+      try {
+        const name = await vscode.window.showInputBox({
+          title: 'Create group',
+          prompt: 'Enter a group name.',
+          ignoreFocusOut: true,
+        });
 
-      if (!name) {
-        return;
+        if (!name) {
+          return;
+        }
+
+        await services.repository.createGroup(name);
+        await services.refreshViews();
+      } catch (error) {
+        await vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
       }
+    })
+  );
 
-      await services.repository.createGroup(name);
-      await services.refreshViews();
+  disposables.push(
+    vscode.commands.registerCommand('localIssues.deleteGroup', async (groupTarget?: unknown) => {
+      try {
+        const resolvedGroupId = extractGroupId(groupTarget);
+        if (!resolvedGroupId || resolvedGroupId === '__ungrouped__') {
+          await vscode.window.showInformationMessage('Select a group first.');
+          return;
+        }
+
+        const file = await services.repository.load();
+        const group = file.groups.find((entry) => entry.id === resolvedGroupId);
+        if (!group) {
+          throw new Error(`Group "${resolvedGroupId}" could not be found.`);
+        }
+
+        const groupIssues = file.issues.filter((issue) => issue.groupId === resolvedGroupId);
+        const openIssues = groupIssues.filter((issue) => issue.status !== 'done');
+        const issueCount = groupIssues.length;
+        const issueLabel = issueCount === 1 ? 'issue' : 'issues';
+
+        const message =
+          openIssues.length > 0
+            ? `Delete "${group.name}" and its ${issueCount} ${issueLabel}? ${openIssues.length} open ${openIssues.length === 1 ? 'issue' : 'issues'} will be deleted too.`
+            : `Delete "${group.name}" and its ${issueCount} ${issueLabel}?`;
+
+        const confirmed = await vscode.window.showWarningMessage(message, { modal: true }, 'Delete');
+        if (confirmed !== 'Delete') {
+          return;
+        }
+
+        await services.repository.deleteGroup(resolvedGroupId);
+
+        const currentIssueId = services.detailsProvider.getCurrentIssueId();
+        const currentIssue = currentIssueId
+          ? file.issues.find((issue) => issue.id === currentIssueId)
+          : undefined;
+
+        if (currentIssue && currentIssue.groupId === resolvedGroupId) {
+          await services.detailsProvider.showNewIssue();
+        }
+
+        await services.refreshViews();
+      } catch (error) {
+        await vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      }
     })
   );
 
@@ -123,29 +175,54 @@ export function registerIssueCommands(
 
   disposables.push(
     vscode.commands.registerCommand('localIssues.createIssue', async (target?: unknown) => {
-      const presetGroupId = extractGroupId(target);
-      const issue = await promptForNewIssue(services, presetGroupId);
-      if (!issue) {
-        return;
+      try {
+        const presetGroupId = extractGroupId(target);
+        await services.detailsProvider.showNewIssue(presetGroupId);
+        await services.refreshViews();
+      } catch (error) {
+        await vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
       }
+    })
+  );
 
-      const created = await services.repository.createIssue(issue);
-      await services.detailsProvider.selectIssue(created.id);
-      await services.refreshViews();
+  disposables.push(
+    vscode.commands.registerCommand('localIssues.completeIssue', async (issueTarget?: unknown) => {
+      try {
+        const resolvedIssueId = await resolveIssueId(issueTarget, services.detailsProvider);
+        if (!resolvedIssueId) {
+          return;
+        }
+
+        await services.repository.updateIssue(resolvedIssueId, { status: 'done' });
+        await services.detailsProvider.selectIssue(resolvedIssueId);
+        await services.refreshViews();
+      } catch (error) {
+        await vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      }
     })
   );
 
   disposables.push(
     vscode.commands.registerCommand('localIssues.toggleHideCompleted', async () => {
-      const current = await services.settings.getHideCompleted();
-      await services.settings.setHideCompleted(!current);
-      await services.refreshViews();
+      await toggleHideCompleted(services);
     })
   );
 
   disposables.push(
-    vscode.commands.registerCommand('localIssues.setStatus', async (issueId?: string) => {
-      const resolvedIssueId = await resolveIssueId(issueId, services.detailsProvider);
+    vscode.commands.registerCommand('localIssues.showCompletedIssues', async () => {
+      await setHideCompleted(services, false);
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('localIssues.hideCompletedIssues', async () => {
+      await setHideCompleted(services, true);
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('localIssues.setStatus', async (issueTarget?: unknown) => {
+      const resolvedIssueId = await resolveIssueId(issueTarget, services.detailsProvider);
       if (!resolvedIssueId) {
         return;
       }
@@ -162,8 +239,8 @@ export function registerIssueCommands(
   );
 
   disposables.push(
-    vscode.commands.registerCommand('localIssues.setPriority', async (issueId?: string) => {
-      const resolvedIssueId = await resolveIssueId(issueId, services.detailsProvider);
+    vscode.commands.registerCommand('localIssues.setPriority', async (issueTarget?: unknown) => {
+      const resolvedIssueId = await resolveIssueId(issueTarget, services.detailsProvider);
       if (!resolvedIssueId) {
         return;
       }
@@ -180,8 +257,8 @@ export function registerIssueCommands(
   );
 
   disposables.push(
-    vscode.commands.registerCommand('localIssues.deleteIssue', async (issueId?: string) => {
-      const resolvedIssueId = await resolveIssueId(issueId, services.detailsProvider);
+    vscode.commands.registerCommand('localIssues.deleteIssue', async (issueTarget?: unknown) => {
+      const resolvedIssueId = await resolveIssueId(issueTarget, services.detailsProvider);
       if (!resolvedIssueId) {
         return;
       }
@@ -207,10 +284,10 @@ export function registerIssueCommands(
 }
 
 async function resolveIssueId(
-  issueId: string | undefined,
+  issueTarget: unknown,
   detailsProvider: IssueDetailsViewProvider
 ): Promise<string | undefined> {
-  const resolvedIssueId = issueId ?? detailsProvider.getCurrentIssueId();
+  const resolvedIssueId = extractIssueId(issueTarget) ?? detailsProvider.getCurrentIssueId();
   if (!resolvedIssueId) {
     await vscode.window.showInformationMessage('Select an issue first.');
   }
@@ -219,10 +296,10 @@ async function resolveIssueId(
 }
 
 async function openIssueEditor(
-  issueId: string | undefined,
+  issueTarget: unknown,
   services: IssueCommandServices
 ): Promise<void> {
-  const resolvedIssueId = await resolveIssueId(issueId, services.detailsProvider);
+  const resolvedIssueId = await resolveIssueId(issueTarget, services.detailsProvider);
   if (!resolvedIssueId) {
     return;
   }
@@ -260,94 +337,15 @@ async function getDefaultExportUri(services: IssueCommandServices): Promise<vsco
   return vscode.Uri.file(path.join(directory, 'issues-export.json'));
 }
 
-async function promptForNewIssue(
-  services: IssueCommandServices,
-  presetGroupId?: string
-): Promise<{
-  title: string;
-  description: string;
-  groupId: string;
-  status: IssueStatus;
-  priority: IssuePriority;
-} | undefined> {
-  const file = await services.repository.load();
-  let groupId = presetGroupId && file.groups.some((group) => group.id === presetGroupId) ? presetGroupId : '';
+async function setHideCompleted(services: IssueCommandServices, value: boolean): Promise<void> {
+  await services.settings.setHideCompleted(value);
+  await vscode.commands.executeCommand('setContext', 'localIssues.hideCompleted', value);
+  await services.refreshViews();
+}
 
-  if (groupId) {
-    // A group was supplied from a tree context menu or found as the default group.
-  } else if (file.groups.length) {
-    const groupChoice = await vscode.window.showQuickPick(
-      [
-        ...file.groups.map((group) => ({ label: group.name, description: group.id, value: group.id })),
-        { label: 'Create new group...', description: 'Add a new group first', value: '__create__' },
-      ],
-      {
-        title: 'Choose a group',
-        placeHolder: 'Select a group for the new issue',
-      }
-    );
-
-    if (!groupChoice) {
-      return undefined;
-    }
-
-    if (groupChoice.value === '__create__') {
-      const name = await vscode.window.showInputBox({
-        title: 'Create group',
-        prompt: 'Enter a group name for the new issue.',
-        ignoreFocusOut: true,
-      });
-
-      if (!name) {
-        return undefined;
-      }
-
-      const group = await services.repository.createGroup(name);
-      groupId = group.id;
-    } else {
-      groupId = groupChoice.value;
-    }
-  } else {
-    const name = await vscode.window.showInputBox({
-      title: 'Create group',
-      prompt: 'Enter a group name for the new issue.',
-      ignoreFocusOut: true,
-    });
-
-    if (!name) {
-      return undefined;
-    }
-
-    const group = await services.repository.createGroup(name);
-    groupId = group.id;
-  }
-
-  const title = await vscode.window.showInputBox({
-    title: 'Create issue',
-    prompt: 'Enter a title for the issue.',
-    ignoreFocusOut: true,
-  });
-
-  if (!title) {
-    return undefined;
-  }
-
-  const description = await vscode.window.showInputBox({
-    title: 'Issue description',
-    prompt: 'Optional. Add a short description or notes.',
-    ignoreFocusOut: true,
-  });
-
-  const status = (await promptForStatus()) ?? 'todo';
-  const priority = (await promptForPriority()) ?? 'medium';
-
-  return {
-    title,
-    description: description ?? '',
-    groupId,
-    status,
-    priority,
-  };
+async function toggleHideCompleted(services: IssueCommandServices): Promise<void> {
+  const current = await services.settings.getHideCompleted();
+  await setHideCompleted(services, !current);
 }
 
 function extractGroupId(target: unknown): string | undefined {
@@ -361,6 +359,31 @@ function extractGroupId(target: unknown): string | undefined {
   }
 
   if (typeof candidate.id === 'string' && candidate.contextValue === 'localIssuesGroup') {
+    return candidate.id;
+  }
+
+  return undefined;
+}
+
+function extractIssueId(target: unknown): string | undefined {
+  if (typeof target === 'string') {
+    return target.trim() || undefined;
+  }
+
+  if (!target || typeof target !== 'object') {
+    return undefined;
+  }
+
+  const candidate = target as { issue?: { id?: unknown }; id?: unknown; contextValue?: unknown };
+  if (candidate.issue && typeof candidate.issue.id === 'string') {
+    return candidate.issue.id;
+  }
+
+  if (typeof candidate.id === 'string' && candidate.contextValue === 'localIssuesIssue') {
+    return candidate.id;
+  }
+
+  if (typeof candidate.id === 'string') {
     return candidate.id;
   }
 

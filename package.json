@@ -17,12 +17,16 @@
     "onCommand:localIssues.refresh",
     "onCommand:localIssues.createIssue",
     "onCommand:localIssues.createGroup",
+    "onCommand:localIssues.deleteGroup",
     "onCommand:localIssues.importIssues",
     "onCommand:localIssues.exportIssues",
     "onCommand:localIssues.toggleHideCompleted",
+    "onCommand:localIssues.showCompletedIssues",
+    "onCommand:localIssues.hideCompletedIssues",
     "onCommand:localIssues.setStatus",
     "onCommand:localIssues.setPriority",
     "onCommand:localIssues.deleteIssue",
+    "onCommand:localIssues.completeIssue",
     "onCommand:localIssues.editIssue"
   ],
   "main": "./out/extension.js",
@@ -45,43 +49,79 @@
     "commands": [
       {
         "command": "localIssues.refresh",
-        "title": "Local Issues: Refresh"
+        "title": "Refresh",
+        "icon": "$(refresh)"
       },
       {
         "command": "localIssues.createIssue",
-        "title": "Local Issues: Create Issue"
+        "title": "Add Issue",
+        "icon": "$(add)"
       },
       {
         "command": "localIssues.createGroup",
-        "title": "Local Issues: Create Group"
+        "title": "Add Group",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "localIssues.deleteGroup",
+        "title": "Delete Group",
+        "icon": {
+          "light": "media/delete-red.svg",
+          "dark": "media/delete-red.svg"
+        }
       },
       {
         "command": "localIssues.editIssue",
-        "title": "Local Issues: Edit Issue"
+        "title": "Edit Issue",
+        "icon": "$(edit)"
       },
       {
         "command": "localIssues.importIssues",
-        "title": "Local Issues: Import Issues"
+        "title": "Import Issues",
+        "icon": "$(cloud-download)"
       },
       {
         "command": "localIssues.exportIssues",
-        "title": "Local Issues: Export Issues"
+        "title": "Export Issues",
+        "icon": "$(cloud-upload)"
       },
       {
         "command": "localIssues.toggleHideCompleted",
-        "title": "Local Issues: Toggle Hide Completed"
+        "title": "Toggle Hide Completed",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "localIssues.showCompletedIssues",
+        "title": "Show Completed",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "localIssues.hideCompletedIssues",
+        "title": "Hide Completed",
+        "icon": "$(eye-closed)"
       },
       {
         "command": "localIssues.setStatus",
-        "title": "Local Issues: Change Status"
+        "title": "Change Status",
+        "icon": "$(symbol-constant)"
       },
       {
         "command": "localIssues.setPriority",
-        "title": "Local Issues: Change Priority"
+        "title": "Change Priority",
+        "icon": "$(arrow-up)"
       },
       {
         "command": "localIssues.deleteIssue",
-        "title": "Local Issues: Delete Issue"
+        "title": "Delete Issue",
+        "icon": {
+          "light": "media/delete-red.svg",
+          "dark": "media/delete-red.svg"
+        }
+      },
+      {
+        "command": "localIssues.completeIssue",
+        "title": "Complete Issue",
+        "icon": "$(check)"
       }
     ],
     "viewsContainers": {
@@ -101,43 +141,81 @@
         },
         {
           "id": "localIssues.details",
-          "name": "Details"
+          "name": "Details",
+          "type": "webview"
         }
       ]
     },
     "menus": {
       "view/title": [
         {
-          "command": "localIssues.createIssue",
-          "when": "view == localIssues.tree",
-          "group": "navigation"
-        },
-        {
           "command": "localIssues.createGroup",
           "when": "view == localIssues.tree",
-          "group": "navigation"
+          "group": "navigation",
+          "icon": "$(new-folder)"
         },
-        {
-          "command": "localIssues.refresh",
-          "when": "view == localIssues.tree",
-          "group": "navigation"
-        },
-        {
-          "command": "localIssues.toggleHideCompleted",
-          "when": "view == localIssues.tree",
-          "group": "navigation"
-        }
+      {
+        "command": "localIssues.refresh",
+        "when": "view == localIssues.tree",
+        "group": "navigation",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "localIssues.importIssues",
+        "when": "view == localIssues.tree",
+        "group": "navigation@1",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "localIssues.exportIssues",
+        "when": "view == localIssues.tree",
+        "group": "navigation@2",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "localIssues.hideCompletedIssues",
+        "when": "view == localIssues.tree && !localIssues.hideCompleted",
+        "group": "navigation@3",
+        "icon": "$(eye)"
+      },
+      {
+        "command": "localIssues.showCompletedIssues",
+        "when": "view == localIssues.tree && localIssues.hideCompleted",
+        "group": "navigation@4",
+        "icon": "$(eye-closed)"
+      }
       ],
       "view/item/context": [
         {
           "command": "localIssues.createIssue",
           "when": "view == localIssues.tree && viewItem == localIssuesGroup",
-          "group": "navigation"
+          "group": "inline",
+          "icon": "$(add)"
+        },
+        {
+          "command": "localIssues.deleteGroup",
+          "when": "view == localIssues.tree && viewItem == localIssuesGroup",
+          "group": "inline@1",
+          "icon": {
+            "light": "media/delete-red.svg",
+            "dark": "media/delete-red.svg"
+          }
         },
         {
           "command": "localIssues.editIssue",
           "when": "view == localIssues.tree && viewItem == localIssuesIssue",
           "group": "inline"
+        },
+        {
+          "command": "localIssues.completeIssue",
+          "when": "view == localIssues.tree && viewItem == localIssuesIssue",
+          "group": "inline@1",
+          "icon": "$(check)"
+        },
+        {
+          "command": "localIssues.deleteIssue",
+          "when": "view == localIssues.tree && viewItem == localIssuesIssue",
+          "group": "inline@2"
         },
         {
           "command": "localIssues.setStatus",

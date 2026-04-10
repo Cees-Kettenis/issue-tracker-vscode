@@ -85,6 +85,40 @@ test('repository seeds, creates, updates, and deletes issues', async () => {
   await fs.rm(root, { recursive: true, force: true });
 });
 
+test('repository deletes groups and cascades their issues', async () => {
+  const root = await createWorkspace();
+  const settings = new IssuesSettingsService(createContext());
+  const repository = new IssuesRepository(settings);
+
+  const group = await repository.createGroup('Backend');
+  const secondary = await repository.createGroup('Frontend');
+
+  await repository.createIssue({
+    title: 'Fix API timeout',
+    description: 'Investigate the timeout path.',
+    groupId: group.id,
+    status: 'todo',
+    priority: 'high',
+  });
+
+  await repository.createIssue({
+    title: 'Polish dashboard',
+    description: 'This issue stays.',
+    groupId: secondary.id,
+    status: 'done',
+    priority: 'low',
+  });
+
+  await repository.deleteGroup(group.id);
+  const afterDelete = await repository.load();
+
+  assert.equal(afterDelete.groups.some((entry) => entry.id === group.id), false);
+  assert.equal(afterDelete.issues.some((entry) => entry.groupId === group.id), false);
+  assert.equal(afterDelete.issues.some((entry) => entry.groupId === secondary.id), true);
+
+  await fs.rm(root, { recursive: true, force: true });
+});
+
 test('repository imports and exports compatible JSON files', async () => {
   const root = await createWorkspace();
   const settings = new IssuesSettingsService(createContext());

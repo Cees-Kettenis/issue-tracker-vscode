@@ -8,16 +8,24 @@ import { slugify } from '../utils/strings';
 import { IssuesSettingsService } from './settings';
 
 export class IssuesRepository {
-  constructor(private readonly settings: IssuesSettingsService) {}
+  constructor(
+    private readonly settings: IssuesSettingsService,
+    private readonly log: (message: string) => void = () => undefined
+  ) {}
 
   async load(): Promise<IssuesFile> {
     const storePath = await this.settings.resolveCurrentStorePath();
-    return this.readStoreFile(storePath, true);
+    this.log(`repository.load -> ${storePath}`);
+    const file = await this.readStoreFile(storePath, true);
+    this.log(`repository.load <- ${storePath} (groups=${file.groups.length}, issues=${file.issues.length})`);
+    return file;
   }
 
   async save(file: IssuesFile): Promise<IssuesFile> {
     const storePath = await this.settings.resolveCurrentStorePath();
+    this.log(`repository.save -> ${storePath} (groups=${file.groups.length}, issues=${file.issues.length})`);
     await this.writeStoreFile(storePath, file);
+    this.log(`repository.save <- ${storePath}`);
     return file;
   }
 
@@ -40,9 +48,11 @@ export class IssuesRepository {
   async createGroup(name: string): Promise<IssueGroup> {
     const file = await this.load();
     const groupName = requireGroupName(name);
+    this.log(`repository.createGroup -> "${groupName}"`);
 
     const existing = file.groups.find((group) => group.name.toLowerCase() === groupName.toLowerCase());
     if (existing) {
+      this.log(`repository.createGroup <- existing ${existing.id}`);
       return existing;
     }
 
@@ -52,12 +62,31 @@ export class IssuesRepository {
 
     file.groups.push(group);
     await this.save(file);
+    this.log(`repository.createGroup <- ${group.id}`);
     return group;
+  }
+
+  async deleteGroup(groupId: string): Promise<void> {
+    const file = await this.load();
+    this.log(`repository.deleteGroup -> ${groupId}`);
+
+    const groupIndex = file.groups.findIndex((group) => group.id === groupId);
+    if (groupIndex < 0) {
+      throw new Error(`Group "${groupId}" could not be found.`);
+    }
+
+    file.groups.splice(groupIndex, 1);
+    file.issues = file.issues.filter((issue) => issue.groupId !== groupId);
+    await this.save(file);
+    this.log(`repository.deleteGroup <- ${groupId}`);
   }
 
   async createIssue(input: IssueInput): Promise<Issue> {
     const file = await this.load();
     const normalized = normalizeIssueInput(input);
+    this.log(
+      `repository.createIssue -> title="${normalized.title}" groupId=${normalized.groupId} status=${normalized.status} priority=${normalized.priority}`
+    );
     const group = file.groups.find((entry) => entry.id === normalized.groupId);
 
     if (!group) {
@@ -78,11 +107,13 @@ export class IssuesRepository {
 
     file.issues.push(issue);
     await this.save(file);
+    this.log(`repository.createIssue <- ${issue.id}`);
     return issue;
   }
 
   async updateIssue(issueId: string, patch: IssueUpdateInput): Promise<Issue> {
     const file = await this.load();
+    this.log(`repository.updateIssue -> ${issueId}`);
     const index = file.issues.findIndex((issue) => issue.id === issueId);
 
     if (index < 0) {
@@ -107,11 +138,13 @@ export class IssuesRepository {
 
     file.issues[index] = updated;
     await this.save(file);
+    this.log(`repository.updateIssue <- ${updated.id}`);
     return updated;
   }
 
   async deleteIssue(issueId: string): Promise<void> {
     const file = await this.load();
+    this.log(`repository.deleteIssue -> ${issueId}`);
     const filtered = file.issues.filter((issue) => issue.id !== issueId);
 
     if (filtered.length === file.issues.length) {
@@ -120,10 +153,12 @@ export class IssuesRepository {
 
     file.issues = filtered;
     await this.save(file);
+    this.log(`repository.deleteIssue <- ${issueId}`);
   }
 
   async getIssue(issueId: string): Promise<Issue | undefined> {
     const file = await this.load();
+    this.log(`repository.getIssue -> ${issueId}`);
     return file.issues.find((issue) => issue.id === issueId);
   }
 

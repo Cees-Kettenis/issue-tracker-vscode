@@ -1,28 +1,73 @@
 # Local Issues
 
-Local Issues is a VS Code extension that keeps a lightweight issue tracker inside your workspace. Issues are stored locally in a JSON file, by default at `.vscode/issues.json`.
+Local Issues is a VS Code extension that keeps a lightweight issue tracker inside your workspace. Issue data is stored locally in a JSON file, by default at `.vscode/issues.json`.
+
+## What It Does
+
+- Groups and issues are shown in a custom `Issues` sidebar.
+- Issue rows show a status icon, a colored priority dot, and the title.
+- Hovering an issue shows the rendered Markdown description.
+- Selecting an issue opens the details webview for editing.
+- Creating a new issue opens the details webview instead of a quick-pick flow.
+- Groups can be created and deleted from the tree.
+- Deleting a group cascades to all issues inside it.
+- Issues can be edited, completed, and deleted from the tree or details view.
+- Priority and status are visible in the tree and reflected in the details view.
+- Completed issues can be hidden from the tree.
 
 ## How To Use
 
 1. Open a folder or workspace in VS Code.
-2. Click the `Issues` icon in the Activity Bar.
-3. Use the tree toolbar or command palette to create groups, create issues, import data, export data, refresh the view, or toggle hidden completed issues.
-4. Select an issue to edit it in the details panel.
+2. Open the `Issues` view in the Activity Bar.
+3. Use the tree toolbar or the inline row actions to create groups and issues.
+4. Click an issue to open its details and edit its content.
+5. Hover an issue row to read the rendered Markdown description.
 
-### Main Commands
+## Tree Layout
+
+The issue tree is organized like this:
+
+- group rows at the top level
+- issues nested under each group
+- issue order inside each group:
+  - high
+  - medium
+  - low
+
+Issue rows are displayed in the form:
+
+```text
+status icon + priority dot + title
+```
+
+Group rows show the group name and issue count.
+
+## Commands
+
+Available commands:
 
 - `Local Issues: Create Issue`
 - `Local Issues: Create Group`
+- `Local Issues: Delete Group`
 - `Local Issues: Edit Issue`
-- `Local Issues: Import Issues`
-- `Local Issues: Export Issues`
-- `Local Issues: Refresh`
-- `Local Issues: Toggle Hide Completed`
+- `Local Issues: Complete Issue`
+- `Local Issues: Delete Issue`
 - `Local Issues: Change Status`
 - `Local Issues: Change Priority`
-- `Local Issues: Delete Issue`
+- `Local Issues: Toggle Hide Completed`
+- `Local Issues: Refresh`
+- `Local Issues: Import Issues`
+- `Local Issues: Export Issues`
 
-### Data Storage
+Most of these commands are also available from:
+
+- the tree toolbar
+- group row hover actions
+- issue row hover actions
+- the command palette
+- the issue details view
+
+## Data Storage
 
 By default, the extension stores data in:
 
@@ -38,7 +83,7 @@ You can change the path in workspace settings:
 
 The file is created automatically if it does not exist.
 
-### Schema
+## Schema
 
 The `issues.json` file uses a versioned JSON structure:
 
@@ -66,7 +111,6 @@ The `issues.json` file uses a versioned JSON structure:
 - `version` is currently `1`
 - `status` must be one of `todo`, `in-progress`, `blocked`, or `done`
 - `priority` must be one of `low`, `medium`, or `high`
-- future schema changes should keep older files readable through migrations
 
 ## How To Develop
 
@@ -108,15 +152,13 @@ corepack pnpm run watch
 ### Run In Dev
 
 1. Open this repository in VS Code.
-2. Run the build watch task:
-   - `Terminal > Run Task... > npm: watch`
-   - or start `corepack pnpm run watch` in a terminal
+2. Run the build watch task or start `corepack pnpm run watch` in a terminal.
 3. Press `F5` to launch the extension in an Extension Development Host.
 
-The debug configuration is already defined in [`.vscode/launch.json`](.vscode/launch.json).
+The debug configuration is defined in [`.vscode/launch.json`](.vscode/launch.json).
 
 ## Notes
 
-- The extension currently expects a single workspace folder.
-- If you open no folder, the extension will warn you to open one first.
-- Multi-root workspaces are only partially supported for now and default to the first folder.
+- The extension expects a workspace folder to be open in the same VS Code window.
+- Hover tooltips use Markdown, but long descriptions are still better read in the details pane.
+- The details view is a webview, so changes to its HTML or script often require reloading the Extension Development Host.
