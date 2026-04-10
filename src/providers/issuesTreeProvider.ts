@@ -140,8 +140,8 @@ class IssueTreeItem extends vscode.TreeItem {
     this.id = issue.id;
     this.contextValue = 'localIssuesIssue';
     this.command = {
-      command: 'localIssues.selectIssue',
-      title: 'Open Issue',
+      command: 'localIssues.editIssue',
+      title: 'Edit Issue',
       arguments: [issue.id],
     };
     this.tooltip = `${issue.title}\n${issue.status} · ${issue.priority}\nUpdated ${issue.updatedAt}`;

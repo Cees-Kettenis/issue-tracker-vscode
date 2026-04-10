@@ -28,8 +28,14 @@ export function registerIssueCommands(
   );
 
   disposables.push(
+    vscode.commands.registerCommand('localIssues.editIssue', async (issueId?: string) => {
+      await openIssueEditor(issueId, services);
+    })
+  );
+
+  disposables.push(
     vscode.commands.registerCommand('localIssues.selectIssue', async (issueId?: string) => {
-      await services.detailsProvider.selectIssue(issueId);
+      await openIssueEditor(issueId, services);
     })
   );
 
@@ -210,6 +216,18 @@ async function resolveIssueId(
   }
 
   return resolvedIssueId;
+}
+
+async function openIssueEditor(
+  issueId: string | undefined,
+  services: IssueCommandServices
+): Promise<void> {
+  const resolvedIssueId = await resolveIssueId(issueId, services.detailsProvider);
+  if (!resolvedIssueId) {
+    return;
+  }
+
+  await services.detailsProvider.selectIssue(resolvedIssueId);
 }
 
 async function promptForStatus(): Promise<IssueStatus | undefined> {

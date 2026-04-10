@@ -3,6 +3,7 @@
   "displayName": "Local Issues",
   "description": "A lightweight local issue tracker inside VS Code.",
   "version": "0.0.1",
+  "license": "MIT",
   "publisher": "cees",
   "engines": {
     "vscode": "^1.86.0"
@@ -22,7 +23,7 @@
     "onCommand:localIssues.setStatus",
     "onCommand:localIssues.setPriority",
     "onCommand:localIssues.deleteIssue",
-    "onCommand:localIssues.selectIssue"
+    "onCommand:localIssues.editIssue"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -55,6 +56,10 @@
         "title": "Local Issues: Create Group"
       },
       {
+        "command": "localIssues.editIssue",
+        "title": "Local Issues: Edit Issue"
+      },
+      {
         "command": "localIssues.importIssues",
         "title": "Local Issues: Import Issues"
       },
@@ -77,10 +82,6 @@
       {
         "command": "localIssues.deleteIssue",
         "title": "Local Issues: Delete Issue"
-      },
-      {
-        "command": "localIssues.selectIssue",
-        "title": "Local Issues: Select Issue"
       }
     ],
     "viewsContainers": {
@@ -134,7 +135,7 @@
           "group": "navigation"
         },
         {
-          "command": "localIssues.selectIssue",
+          "command": "localIssues.editIssue",
           "when": "view == localIssues.tree && viewItem == localIssuesIssue",
           "group": "inline"
         },
