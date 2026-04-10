@@ -12,6 +12,7 @@ export interface IssueCommandServices {
   treeProvider: IssuesTreeProvider;
   detailsProvider: IssueDetailsViewProvider;
   settings: IssuesSettingsService;
+  refreshViews: () => Promise<void>;
 }
 
 export function registerIssueCommands(
@@ -22,8 +23,7 @@ export function registerIssueCommands(
 
   disposables.push(
     vscode.commands.registerCommand('localIssues.refresh', async () => {
-      await services.treeProvider.refresh();
-      await services.detailsProvider.refresh();
+      await services.refreshViews();
     })
   );
 
@@ -46,7 +46,7 @@ export function registerIssueCommands(
       }
 
       await services.repository.createGroup(name);
-      await services.treeProvider.refresh();
+      await services.refreshViews();
     })
   );
 
@@ -70,13 +70,14 @@ export function registerIssueCommands(
         }
 
         const imported = await services.repository.importFromFile(source.fsPath);
-        await services.treeProvider.refresh();
 
         if (imported.issues.length) {
           await services.detailsProvider.selectIssue(imported.issues[0].id);
         } else {
           await services.detailsProvider.showNewIssue();
         }
+
+        await services.refreshViews();
 
         await vscode.window.showInformationMessage(
           `Imported ${imported.issues.length} issue${imported.issues.length === 1 ? '' : 's'} and ${imported.groups.length} group${imported.groups.length === 1 ? '' : 's'}.`
@@ -123,8 +124,8 @@ export function registerIssueCommands(
       }
 
       const created = await services.repository.createIssue(issue);
-      await services.treeProvider.refresh();
       await services.detailsProvider.selectIssue(created.id);
+      await services.refreshViews();
     })
   );
 
@@ -132,7 +133,7 @@ export function registerIssueCommands(
     vscode.commands.registerCommand('localIssues.toggleHideCompleted', async () => {
       const current = await services.settings.getHideCompleted();
       await services.settings.setHideCompleted(!current);
-      await services.treeProvider.refresh();
+      await services.refreshViews();
     })
   );
 
@@ -149,8 +150,8 @@ export function registerIssueCommands(
       }
 
       const updated = await services.repository.updateIssue(resolvedIssueId, { status });
-      await services.treeProvider.refresh();
       await services.detailsProvider.selectIssue(updated.id);
+      await services.refreshViews();
     })
   );
 
@@ -167,8 +168,8 @@ export function registerIssueCommands(
       }
 
       const updated = await services.repository.updateIssue(resolvedIssueId, { priority });
-      await services.treeProvider.refresh();
       await services.detailsProvider.selectIssue(updated.id);
+      await services.refreshViews();
     })
   );
 
@@ -190,8 +191,8 @@ export function registerIssueCommands(
       }
 
       await services.repository.deleteIssue(resolvedIssueId);
-      await services.treeProvider.refresh();
       await services.detailsProvider.showNewIssue();
+      await services.refreshViews();
     })
   );
 

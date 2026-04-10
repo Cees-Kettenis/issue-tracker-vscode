@@ -1,10 +1,10 @@
 import * as crypto from 'crypto';
 import * as vscode from 'vscode';
-import type { Issue, IssueGroup, IssueInput, IssuePriority, IssueStatus, IssuesFile } from '../models';
+import type { Issue, IssueGroup, IssuePriority, IssueStatus } from '../models';
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '../models';
+import { renderMarkdown } from '../utils/markdown';
 import { escapeHtml } from '../utils/strings';
 import { IssuesRepository } from '../services/issuesRepository';
-import { IssuesSettingsService } from '../services/settings';
 import { IssuesTreeProvider } from './issuesTreeProvider';
 
 interface IssueFormState {
@@ -21,8 +21,7 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
 
   constructor(
     private readonly repository: IssuesRepository,
-    private readonly treeProvider: IssuesTreeProvider,
-    private readonly settings: IssuesSettingsService
+    private readonly treeProvider: IssuesTreeProvider
   ) {}
 
   getCurrentIssueId(): string | undefined {
@@ -211,6 +210,9 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
 
     const createdAt = issue ? `<div class="meta">Created: ${escapeHtml(issue.createdAt)}</div>` : '';
     const updatedAt = issue ? `<div class="meta">Updated: ${escapeHtml(issue.updatedAt)}</div>` : '';
+    const descriptionPreview = issue?.description
+      ? renderMarkdown(issue.description)
+      : '<p class="empty">No description yet. Add Markdown in the textarea to preview it here.</p>';
 
     return /* html */ `
       <!doctype html>
@@ -286,6 +288,86 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
               gap: 8px;
               flex-wrap: wrap;
             }
+            .preview {
+              display: grid;
+              gap: 6px;
+              padding: 12px;
+              border: 1px solid var(--border);
+              border-radius: 8px;
+              background: color-mix(in srgb, var(--bg) 82%, var(--fg) 18%);
+            }
+            .preview h3 {
+              margin: 0;
+              font-size: 0.9rem;
+              color: var(--muted);
+              text-transform: uppercase;
+              letter-spacing: 0.06em;
+            }
+            .preview .markdown {
+              display: grid;
+              gap: 8px;
+              line-height: 1.5;
+            }
+            .preview .markdown > :first-child {
+              margin-top: 0;
+            }
+            .preview .markdown > :last-child {
+              margin-bottom: 0;
+            }
+            .preview .markdown h1,
+            .preview .markdown h2,
+            .preview .markdown h3,
+            .preview .markdown h4,
+            .preview .markdown h5,
+            .preview .markdown h6,
+            .preview .markdown p,
+            .preview .markdown blockquote,
+            .preview .markdown pre,
+            .preview .markdown ul,
+            .preview .markdown ol {
+              margin: 0;
+            }
+            .preview .markdown h1 {
+              font-size: 1.4rem;
+            }
+            .preview .markdown h2 {
+              font-size: 1.25rem;
+            }
+            .preview .markdown h3 {
+              font-size: 1.1rem;
+            }
+            .preview .markdown h4,
+            .preview .markdown h5,
+            .preview .markdown h6 {
+              font-size: 1rem;
+            }
+            .preview .markdown blockquote {
+              padding-left: 12px;
+              border-left: 3px solid var(--border);
+              color: var(--muted);
+            }
+            .preview .markdown code {
+              padding: 0 4px;
+              border-radius: 4px;
+              background: color-mix(in srgb, var(--bg) 74%, var(--fg) 26%);
+            }
+            .preview .markdown pre {
+              overflow: auto;
+              padding: 10px;
+              border-radius: 8px;
+              background: color-mix(in srgb, var(--bg) 68%, var(--fg) 32%);
+            }
+            .preview .markdown pre code {
+              padding: 0;
+              background: transparent;
+            }
+            .preview .markdown ul,
+            .preview .markdown ol {
+              padding-left: 20px;
+            }
+            .preview .empty {
+              color: var(--muted);
+            }
             button {
               border: 0;
               border-radius: 6px;
@@ -332,6 +414,10 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
               Description
               <textarea id="description" name="description" placeholder="Add notes, steps, or acceptance criteria.">${escapeHtml(issue?.description ?? '')}</textarea>
             </label>
+            <section class="preview" aria-label="Description preview">
+              <h3>Description Preview</h3>
+              <div id="description-preview" class="markdown">${descriptionPreview}</div>
+            </section>
             <div class="row">
               <label>
                 Group

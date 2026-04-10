@@ -6,6 +6,7 @@ import { IssuesRepository } from '../services/issuesRepository';
 import { IssuesSettingsService } from '../services/settings';
 
 type IssueTreeNode = IssueGroupTreeItem | IssueTreeItem | TreeMessageItem;
+export type { IssueTreeNode };
 
 export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeNode> {
   private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<IssueTreeNode | undefined | void>();
@@ -28,6 +29,15 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeNode
     }
 
     this.onDidChangeTreeDataEmitter.fire();
+  }
+
+  getRevealTarget(issueId: string): IssueTreeNode | undefined {
+    if (this.errorMessage) {
+      return undefined;
+    }
+
+    const issue = this.issuesFile.issues.find((entry) => entry.id === issueId);
+    return issue ? new IssueTreeItem(issue) : undefined;
   }
 
   getTreeItem(element: IssueTreeNode): vscode.TreeItem {

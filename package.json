@@ -159,8 +159,9 @@
   "scripts": {
     "compile": "tsc -p .",
     "watch": "tsc -w -p .",
-    "prepublish": "npm run compile",
-    "lint": "tsc -p . --noEmit"
+    "prepublish": "tsc -p .",
+    "lint": "tsc -p . --noEmit",
+    "test": "tsc -p . && node --test test"
   },
   "devDependencies": {
     "@types/node": "^22.13.4",
