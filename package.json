@@ -1,0 +1,161 @@
+{
+  "name": "local-issues",
+  "displayName": "Local Issues",
+  "description": "A lightweight local issue tracker inside VS Code.",
+  "version": "0.0.1",
+  "publisher": "cees",
+  "engines": {
+    "vscode": "^1.86.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onView:localIssues.tree",
+    "onView:localIssues.details",
+    "onCommand:localIssues.refresh",
+    "onCommand:localIssues.createIssue",
+    "onCommand:localIssues.createGroup",
+    "onCommand:localIssues.toggleHideCompleted",
+    "onCommand:localIssues.setStatus",
+    "onCommand:localIssues.setPriority",
+    "onCommand:localIssues.deleteIssue",
+    "onCommand:localIssues.selectIssue"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Local Issues",
+      "properties": {
+        "localIssues.filePath": {
+          "type": "string",
+          "default": ".vscode/issues.json",
+          "description": "Relative or absolute path to the JSON file that stores issues for the current workspace."
+        },
+        "localIssues.hideCompleted": {
+          "type": "boolean",
+          "default": false,
+          "description": "Hide issues marked as done in the tree view."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "localIssues.refresh",
+        "title": "Local Issues: Refresh"
+      },
+      {
+        "command": "localIssues.createIssue",
+        "title": "Local Issues: Create Issue"
+      },
+      {
+        "command": "localIssues.createGroup",
+        "title": "Local Issues: Create Group"
+      },
+      {
+        "command": "localIssues.toggleHideCompleted",
+        "title": "Local Issues: Toggle Hide Completed"
+      },
+      {
+        "command": "localIssues.setStatus",
+        "title": "Local Issues: Change Status"
+      },
+      {
+        "command": "localIssues.setPriority",
+        "title": "Local Issues: Change Priority"
+      },
+      {
+        "command": "localIssues.deleteIssue",
+        "title": "Local Issues: Delete Issue"
+      },
+      {
+        "command": "localIssues.selectIssue",
+        "title": "Local Issues: Select Issue"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "localIssues",
+          "title": "Issues",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "localIssues": [
+        {
+          "id": "localIssues.tree",
+          "name": "Issues"
+        },
+        {
+          "id": "localIssues.details",
+          "name": "Details"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "localIssues.createIssue",
+          "when": "view == localIssues.tree",
+          "group": "navigation"
+        },
+        {
+          "command": "localIssues.createGroup",
+          "when": "view == localIssues.tree",
+          "group": "navigation"
+        },
+        {
+          "command": "localIssues.refresh",
+          "when": "view == localIssues.tree",
+          "group": "navigation"
+        },
+        {
+          "command": "localIssues.toggleHideCompleted",
+          "when": "view == localIssues.tree",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "localIssues.createIssue",
+          "when": "view == localIssues.tree && viewItem == localIssuesGroup",
+          "group": "navigation"
+        },
+        {
+          "command": "localIssues.selectIssue",
+          "when": "view == localIssues.tree && viewItem == localIssuesIssue",
+          "group": "inline"
+        },
+        {
+          "command": "localIssues.setStatus",
+          "when": "view == localIssues.tree && viewItem == localIssuesIssue",
+          "group": "navigation"
+        },
+        {
+          "command": "localIssues.setPriority",
+          "when": "view == localIssues.tree && viewItem == localIssuesIssue",
+          "group": "navigation"
+        },
+        {
+          "command": "localIssues.deleteIssue",
+          "when": "view == localIssues.tree && viewItem == localIssuesIssue",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -w -p .",
+    "prepublish": "npm run compile",
+    "lint": "tsc -p . --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "@types/vscode": "^1.86.0",
+    "typescript": "^5.8.3"
+  },
+  "packageManager": "pnpm@10.33.0+sha1.46a0bef28aad690765997ab6da6d5475bdd4148e"
+}
