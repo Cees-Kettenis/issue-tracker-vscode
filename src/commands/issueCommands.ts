@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import type { IssuePriority, IssueStatus } from '../models';
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '../models';
 import { IssuesRepository } from '../services/issuesRepository';
@@ -46,6 +47,70 @@ export function registerIssueCommands(
 
       await services.repository.createGroup(name);
       await services.treeProvider.refresh();
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('localIssues.importIssues', async () => {
+      try {
+        const selected = await vscode.window.showOpenDialog({
+          title: 'Import issues',
+          canSelectFiles: true,
+          canSelectMany: false,
+          canSelectFolders: false,
+          openLabel: 'Import',
+          filters: {
+            JSON: ['json'],
+          },
+        });
+
+        const source = selected?.[0];
+        if (!source) {
+          return;
+        }
+
+        const imported = await services.repository.importFromFile(source.fsPath);
+        await services.treeProvider.refresh();
+
+        if (imported.issues.length) {
+          await services.detailsProvider.selectIssue(imported.issues[0].id);
+        } else {
+          await services.detailsProvider.showNewIssue();
+        }
+
+        await vscode.window.showInformationMessage(
+          `Imported ${imported.issues.length} issue${imported.issues.length === 1 ? '' : 's'} and ${imported.groups.length} group${imported.groups.length === 1 ? '' : 's'}.`
+        );
+      } catch (error) {
+        await vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      }
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('localIssues.exportIssues', async () => {
+      try {
+        const defaultUri = await getDefaultExportUri(services);
+        const target = await vscode.window.showSaveDialog({
+          title: 'Export issues',
+          defaultUri,
+          saveLabel: 'Export',
+          filters: {
+            JSON: ['json'],
+          },
+        });
+
+        if (!target) {
+          return;
+        }
+
+        const exported = await services.repository.exportToFile(target.fsPath);
+        await vscode.window.showInformationMessage(
+          `Exported ${exported.issues.length} issue${exported.issues.length === 1 ? '' : 's'} to ${target.fsPath}.`
+        );
+      } catch (error) {
+        await vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      }
     })
   );
 
@@ -168,6 +233,12 @@ async function promptForPriority(): Promise<IssuePriority | undefined> {
   );
 
   return selected?.label as IssuePriority | undefined;
+}
+
+async function getDefaultExportUri(services: IssueCommandServices): Promise<vscode.Uri> {
+  const storePath = await services.settings.resolveCurrentStorePath();
+  const directory = path.dirname(storePath);
+  return vscode.Uri.file(path.join(directory, 'issues-export.json'));
 }
 
 async function promptForNewIssue(

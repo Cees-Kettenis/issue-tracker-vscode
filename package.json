@@ -16,6 +16,8 @@
     "onCommand:localIssues.refresh",
     "onCommand:localIssues.createIssue",
     "onCommand:localIssues.createGroup",
+    "onCommand:localIssues.importIssues",
+    "onCommand:localIssues.exportIssues",
     "onCommand:localIssues.toggleHideCompleted",
     "onCommand:localIssues.setStatus",
     "onCommand:localIssues.setPriority",
@@ -51,6 +53,14 @@
       {
         "command": "localIssues.createGroup",
         "title": "Local Issues: Create Group"
+      },
+      {
+        "command": "localIssues.importIssues",
+        "title": "Local Issues: Import Issues"
+      },
+      {
+        "command": "localIssues.exportIssues",
+        "title": "Local Issues: Export Issues"
       },
       {
         "command": "localIssues.toggleHideCompleted",

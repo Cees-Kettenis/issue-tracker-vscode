@@ -12,34 +12,29 @@ export class IssuesRepository {
 
   async load(): Promise<IssuesFile> {
     const storePath = await this.settings.resolveCurrentStorePath();
-    await this.ensureSeedFile(storePath);
-
-    try {
-      const raw = await fs.readFile(storePath, 'utf8');
-      return normalizeIssuesFile(JSON.parse(raw));
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        throw new Error(
-          `Local Issues could not parse "${storePath}" because it contains invalid JSON. Fix the file or delete it to recreate an empty store.`
-        );
-      }
-
-      if (error instanceof Error) {
-        throw error;
-      }
-
-      throw new Error('Local Issues could not read the issues file.');
-    }
+    return this.readStoreFile(storePath, true);
   }
 
   async save(file: IssuesFile): Promise<IssuesFile> {
     const storePath = await this.settings.resolveCurrentStorePath();
-    await this.writeAtomic(storePath, JSON.stringify(file, null, 2) + '\n');
+    await this.writeStoreFile(storePath, file);
     return file;
   }
 
   async refresh(): Promise<IssuesFile> {
     return this.load();
+  }
+
+  async importFromFile(sourcePath: string): Promise<IssuesFile> {
+    const imported = await this.readStoreFile(sourcePath, false, 'import');
+    await this.save(imported);
+    return imported;
+  }
+
+  async exportToFile(targetPath: string): Promise<IssuesFile> {
+    const current = await this.load();
+    await this.writeStoreFile(targetPath, current);
+    return current;
   }
 
   async createGroup(name: string): Promise<IssueGroup> {
@@ -132,12 +127,51 @@ export class IssuesRepository {
     return file.issues.find((issue) => issue.id === issueId);
   }
 
+  private async readStoreFile(
+    storePath: string,
+    seedIfMissing: boolean,
+    actionLabel: 'load' | 'import' = 'load'
+  ): Promise<IssuesFile> {
+    if (seedIfMissing) {
+      await this.ensureSeedFile(storePath);
+    }
+
+    try {
+      const raw = await fs.readFile(storePath, 'utf8');
+      return normalizeIssuesFile(JSON.parse(raw));
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new Error(
+          `Local Issues could not ${actionLabel} "${storePath}" because it contains invalid JSON. Fix the file or delete it to recreate an empty store.`
+        );
+      }
+
+      if (error instanceof Error) {
+        if ('code' in error && (error as NodeJS.ErrnoException).code === 'ENOENT') {
+          if (actionLabel === 'import') {
+            throw new Error(`Local Issues could not import "${storePath}" because the file does not exist.`);
+          }
+
+          throw new Error(`Local Issues could not load "${storePath}" because the file does not exist.`);
+        }
+
+        throw error;
+      }
+
+      throw new Error(`Local Issues could not ${actionLabel} the issues file.`);
+    }
+  }
+
   private async ensureSeedFile(storePath: string): Promise<void> {
     try {
       await fs.access(storePath);
     } catch {
-      await this.writeAtomic(storePath, JSON.stringify(createEmptyIssuesFile(), null, 2) + '\n');
+      await this.writeStoreFile(storePath, createEmptyIssuesFile());
     }
+  }
+
+  private async writeStoreFile(filePath: string, file: IssuesFile): Promise<void> {
+    await this.writeAtomic(filePath, JSON.stringify(file, null, 2) + '\n');
   }
 
   private ensureUniqueId(baseId: string, existingIds: string[]): string {

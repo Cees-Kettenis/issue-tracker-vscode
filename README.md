@@ -13,6 +13,7 @@ Local Issues is a VS Code extension that keeps a lightweight issue tracker insid
 - Delete issues
 - Hide completed issues
 - Refresh the tree and detail view
+- Import and export issue data as JSON
 
 ## Prerequisites
 
@@ -68,6 +69,8 @@ After the Extension Development Host opens:
 3. Use the tree toolbar or command palette to:
    - create a group
    - create an issue
+   - import issue data
+   - export issue data
    - refresh the view
    - toggle hiding completed issues
 4. Select an issue to edit it in the details panel.
@@ -88,10 +91,42 @@ You can change the path in workspace settings:
 
 The file is created automatically if it does not exist.
 
+## Schema
+
+The `issues.json` file uses a versioned JSON structure:
+
+```json
+{
+  "version": 1,
+  "groups": [
+    { "id": "production", "name": "Production" }
+  ],
+  "issues": [
+    {
+      "id": "iss_001",
+      "title": "Fix login redirect",
+      "description": "Users are sent to the wrong page after login.",
+      "groupId": "production",
+      "status": "todo",
+      "priority": "high",
+      "createdAt": "2026-04-10T10:00:00Z",
+      "updatedAt": "2026-04-10T10:00:00Z"
+    }
+  ]
+}
+```
+
+- `version` is currently `1`
+- `status` must be one of `todo`, `in-progress`, `blocked`, or `done`
+- `priority` must be one of `low`, `medium`, or `high`
+- future schema changes should keep older files readable through migrations
+
 ## Commands
 
 - `Local Issues: Create Issue`
 - `Local Issues: Create Group`
+- `Local Issues: Import Issues`
+- `Local Issues: Export Issues`
 - `Local Issues: Refresh`
 - `Local Issues: Toggle Hide Completed`
 - `Local Issues: Change Status`
