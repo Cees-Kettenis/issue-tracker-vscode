@@ -1,10 +1,12 @@
 {
-  "name": "local-issues",
-  "displayName": "Local Issues",
+  "name": "local-issues-tracker",
+  "displayName": "Local Issues Tracker",
   "description": "A lightweight local issue tracker inside VS Code.",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "license": "MIT",
-  "publisher": "cees",
+  "icon": "media/marketplace-icon.png",
+  "publisher": "Cees Kettenis",
+  "repository": "https://github.com/cees/issue-tracker-vscode",
   "engines": {
     "vscode": "^1.86.0"
   },
