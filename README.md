@@ -2,6 +2,11 @@
 
 Local Issues is a VS Code extension that keeps a lightweight issue tracker inside your workspace. Issue data is stored locally in a JSON file, by default at `.vscode/issues.json`.
 
+## Support
+
+- Issues and feedback: <https://github.com/cees/issue-tracker-vscode/issues>
+- License: MIT
+
 ## What It Does
 
 - Groups and issues are shown in a custom `Issues` sidebar.
@@ -162,3 +167,4 @@ The debug configuration is defined in [`.vscode/launch.json`](.vscode/launch.jso
 - The extension expects a workspace folder to be open in the same VS Code window.
 - Hover tooltips use Markdown, but long descriptions are still better read in the details pane.
 - The details view is a webview, so changes to its HTML or script often require reloading the Extension Development Host.
+- Release history is in [CHANGELOG.md](CHANGELOG.md).

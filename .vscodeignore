@@ -1,0 +1,16 @@
+.vscode/**
+src/**
+test/**
+test-support/**
+image/**
+tsconfig.json
+tasks.json
+plan.md
+pnpm-lock.yaml
+*.ts
+*.map
+!out/**
+!media/**
+!README.md
+!LICENSE
+!package.json
