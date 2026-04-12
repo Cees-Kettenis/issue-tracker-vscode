@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+* Updated broken links in documentation.
+
 ## 1.0.0
 
 - First Marketplace release of Local Issues Tracker.
