@@ -4,7 +4,7 @@ Local Issues is a VS Code extension that keeps a lightweight issue tracker insid
 
 ## Support
 
-- Issues and feedback: <https://github.com/cees/issue-tracker-vscode/issues>
+- Issues and feedback: <https://github.com/cees-kettenis/issue-tracker-vscode/issues>
 - License: MIT
 
 ## What It Does
