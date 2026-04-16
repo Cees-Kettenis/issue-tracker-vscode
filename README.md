@@ -162,6 +162,10 @@ corepack pnpm run watch
 
 The debug configuration is defined in [`.vscode/launch.json`](.vscode/launch.json).
 
+## Roadmap
+
+Planned features and longer-term ideas are tracked in [ROADMAP.md](ROADMAP.md).
+
 ## Notes
 
 - The extension expects a workspace folder to be open in the same VS Code window.
