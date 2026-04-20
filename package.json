@@ -2,7 +2,7 @@
   "name": "local-issues-tracker",
   "displayName": "Local Issues Tracker",
   "description": "A lightweight local issue tracker inside VS Code.",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "license": "MIT",
   "icon": "media/marketplace-icon.png",
   "publisher": "CeesKettenis",
@@ -19,9 +19,11 @@
   "activationEvents": [
     "onView:localIssues.tree",
     "onView:localIssues.details",
+    "onView:localIssues.allTasks",
     "onCommand:localIssues.refresh",
     "onCommand:localIssues.createIssue",
     "onCommand:localIssues.createGroup",
+    "onCommand:localIssues.createPerson",
     "onCommand:localIssues.deleteGroup",
     "onCommand:localIssues.importIssues",
     "onCommand:localIssues.exportIssues",
@@ -66,6 +68,11 @@
         "command": "localIssues.createGroup",
         "title": "Add Group",
         "icon": "$(new-folder)"
+      },
+      {
+        "command": "localIssues.createPerson",
+        "title": "Add Person",
+        "icon": "$(person)"
       },
       {
         "command": "localIssues.deleteGroup",
@@ -148,46 +155,62 @@
           "id": "localIssues.details",
           "name": "Details",
           "type": "webview"
+        },
+        {
+          "id": "localIssues.allTasks",
+          "name": "All Tasks"
         }
       ]
     },
     "menus": {
       "view/title": [
-        {
-          "command": "localIssues.createGroup",
-          "when": "view == localIssues.tree",
-          "group": "navigation",
-          "icon": "$(new-folder)"
-        },
+      {
+        "command": "localIssues.createGroup",
+        "when": "view == localIssues.tree",
+        "group": "navigation",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "localIssues.createPerson",
+        "when": "view == localIssues.tree",
+        "group": "navigation@1",
+        "icon": "$(person)"
+      },
       {
         "command": "localIssues.refresh",
         "when": "view == localIssues.tree",
-        "group": "navigation",
+        "group": "navigation@2",
         "icon": "$(refresh)"
       },
       {
         "command": "localIssues.importIssues",
         "when": "view == localIssues.tree",
-        "group": "navigation@1",
+        "group": "navigation@3",
         "icon": "$(cloud-download)"
       },
       {
         "command": "localIssues.exportIssues",
         "when": "view == localIssues.tree",
-        "group": "navigation@2",
+        "group": "navigation@4",
         "icon": "$(cloud-upload)"
       },
       {
         "command": "localIssues.hideCompletedIssues",
         "when": "view == localIssues.tree && !localIssues.hideCompleted",
-        "group": "navigation@3",
+        "group": "navigation@5",
         "icon": "$(eye)"
       },
       {
         "command": "localIssues.showCompletedIssues",
         "when": "view == localIssues.tree && localIssues.hideCompleted",
-        "group": "navigation@4",
+        "group": "navigation@6",
         "icon": "$(eye-closed)"
+      },
+      {
+        "command": "localIssues.refresh",
+        "when": "view == localIssues.allTasks",
+        "group": "navigation@1",
+        "icon": "$(refresh)"
       }
       ],
       "view/item/context": [

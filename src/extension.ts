@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { registerIssueCommands } from './commands';
-import { IssueDetailsViewProvider, IssuesTreeProvider } from './providers';
-import type { IssueTreeNode } from './providers';
+import { AllTasksTreeProvider, IssueDetailsViewProvider, IssuesTreeProvider } from './providers';
+import type { IssueTreeNode, AllTasksTreeNode } from './providers';
 import { IssuesFileWatcher, IssuesRepository, IssuesSettingsService } from './services';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
@@ -15,10 +15,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const settings = new IssuesSettingsService(context);
   const repository = new IssuesRepository(settings, log);
   const treeProvider = new IssuesTreeProvider(repository, settings);
+  const allTasksProvider = new AllTasksTreeProvider(repository, settings);
   let detailsProvider: IssueDetailsViewProvider;
   const treeView = vscode.window.createTreeView('localIssues.tree', {
     treeDataProvider: treeProvider,
     showCollapseAll: true,
+  });
+  const allTasksView = vscode.window.createTreeView('localIssues.allTasks', {
+    treeDataProvider: allTasksProvider,
+    showCollapseAll: false,
   });
   const fileWatcher = new IssuesFileWatcher(settings, async () => {
     await refreshViews();
@@ -27,6 +32,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   async function refreshViews(): Promise<void> {
     log('refreshViews -> start');
     await treeProvider.refresh();
+    await allTasksProvider.refresh();
     await detailsProvider.refresh();
 
     const selectedIssueId = detailsProvider.getCurrentIssueId();
@@ -36,6 +42,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
     const revealTarget: IssueTreeNode | undefined = treeProvider.getRevealTarget(selectedIssueId);
     if (!revealTarget) {
+      const allTasksRevealTarget: AllTasksTreeNode | undefined = allTasksProvider.getRevealTarget(selectedIssueId);
+      if (allTasksRevealTarget) {
+        try {
+          await allTasksView.reveal(allTasksRevealTarget, {
+            select: true,
+            focus: false,
+            expand: false,
+          });
+        } catch {
+          // Ignore reveal failures when the tree is not visible yet.
+        }
+      }
       return;
     }
 
@@ -48,6 +66,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     } catch {
       // Ignore reveal failures when the tree is not visible yet.
     }
+
+    const allTasksRevealTarget: AllTasksTreeNode | undefined = allTasksProvider.getRevealTarget(selectedIssueId);
+    if (allTasksRevealTarget) {
+      try {
+        await allTasksView.reveal(allTasksRevealTarget, {
+          select: true,
+          focus: false,
+          expand: false,
+        });
+      } catch {
+        // Ignore reveal failures when the tree is not visible yet.
+      }
+    }
     log(`refreshViews <- selected=${selectedIssueId}`);
   }
 
@@ -57,6 +88,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   context.subscriptions.push(
     treeView,
+    allTasksView,
     vscode.window.registerWebviewViewProvider('localIssues.details', detailsProvider, {
       webviewOptions: {
         retainContextWhenHidden: true,

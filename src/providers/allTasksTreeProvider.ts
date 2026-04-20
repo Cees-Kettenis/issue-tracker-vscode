@@ -1,16 +1,16 @@
 import * as vscode from 'vscode';
-import type { Issue, IssueGroup, IssuesFile } from '../models';
+import type { Issue, IssuesFile } from '../models';
 import { createEmptyIssuesFile } from '../models';
 import { IssuesRepository } from '../services/issuesRepository';
 import { IssuesSettingsService } from '../services/settings';
 import { formatDueDate } from '../utils/dates';
 import { sortIssuesByDueDate } from '../utils/sorting';
 
-type IssueTreeNode = IssueGroupTreeItem | IssueTreeItem | TreeMessageItem;
-export type { IssueTreeNode };
+type AllTasksTreeNode = AllTasksIssueTreeItem | TreeMessageItem;
+export type { AllTasksTreeNode };
 
-export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeNode> {
-  private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<IssueTreeNode | undefined | void>();
+export class AllTasksTreeProvider implements vscode.TreeDataProvider<AllTasksTreeNode> {
+  private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<AllTasksTreeNode | undefined | void>();
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
 
   private issuesFile: IssuesFile = createEmptyIssuesFile();
@@ -32,110 +32,62 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeNode
     this.onDidChangeTreeDataEmitter.fire();
   }
 
-  getRevealTarget(issueId: string): IssueTreeNode | undefined {
+  getRevealTarget(issueId: string): AllTasksTreeNode | undefined {
     if (this.errorMessage) {
       return undefined;
     }
 
     const issue = this.issuesFile.issues.find((entry) => entry.id === issueId);
-    return issue ? new IssueTreeItem(issue, this.issuesFile.people) : undefined;
+    return issue ? new AllTasksIssueTreeItem(issue, this.issuesFile.people) : undefined;
   }
 
-  getTreeItem(element: IssueTreeNode): vscode.TreeItem {
+  getTreeItem(element: AllTasksTreeNode): vscode.TreeItem {
     return element;
   }
 
-  async getChildren(element?: IssueTreeNode): Promise<IssueTreeNode[]> {
+  async getChildren(element?: AllTasksTreeNode): Promise<AllTasksTreeNode[]> {
     if (this.errorMessage) {
       return [
         new TreeMessageItem(
-          'Unable to load issues',
+          'Unable to load tasks',
           this.errorMessage,
           new vscode.ThemeIcon('error')
         ),
       ];
     }
 
-    if (!element) {
-      return this.getRootItems();
+    if (element) {
+      return [];
     }
 
-    if (element instanceof IssueGroupTreeItem) {
-      return this.getIssuesForGroup(element.group.id);
-    }
-
-    return [];
+    const hideCompleted = await this.settings.getHideCompleted();
+    return this.getRootItems(hideCompleted);
   }
 
-  private async getRootItems(): Promise<IssueTreeNode[]> {
-    const hideCompleted = await this.settings.getHideCompleted();
-    const issues = hideCompleted
-      ? this.issuesFile.issues.filter((issue) => issue.status !== 'done')
-      : [...this.issuesFile.issues];
+  private getRootItems(hideCompleted: boolean): AllTasksTreeNode[] {
+    const issues = sortIssuesByDueDate(
+      hideCompleted ? this.issuesFile.issues.filter((issue) => issue.status !== 'done') : [...this.issuesFile.issues]
+    );
 
-    if (!this.issuesFile.groups.length && !issues.length) {
+    if (!issues.length) {
       return [
         new TreeMessageItem(
-          'No groups yet',
-          'Create a group to start tracking issues.',
+          'No tasks yet',
+          'Create an issue in the Issues view first.',
           new vscode.ThemeIcon('add'),
           {
-            command: 'localIssues.createGroup',
-            title: 'Add Group',
+            command: 'localIssues.createIssue',
+            title: 'Add Issue',
           }
         ),
       ];
     }
 
-    const knownGroupIds = new Set(this.issuesFile.groups.map((group) => group.id));
-    const orphans = issues.filter((issue) => !knownGroupIds.has(issue.groupId));
-    const groupItems = this.issuesFile.groups.map((group) => new IssueGroupTreeItem(group, issues));
-
-    if (orphans.length) {
-      groupItems.push(new IssueGroupTreeItem({ id: '__ungrouped__', name: 'Ungrouped' }, issues, orphans));
-    }
-
-    return groupItems;
-  }
-
-  private async getIssuesForGroup(groupId: string): Promise<IssueTreeNode[]> {
-    const hideCompleted = await this.settings.getHideCompleted();
-    const issues = this.issuesFile.issues.filter((issue) => issue.groupId === groupId);
-    const filtered = hideCompleted ? issues.filter((issue) => issue.status !== 'done') : issues;
-
-    if (!filtered.length) {
-      return [
-        new TreeMessageItem(
-          'No issues in this group',
-          'Create a new issue or move one here.',
-          new vscode.ThemeIcon('note')
-        ),
-      ];
-    }
-
-    return sortIssuesByDueDate(filtered).map((issue) => new IssueTreeItem(issue, this.issuesFile.people));
+    return issues.map((issue) => new AllTasksIssueTreeItem(issue, this.issuesFile.people));
   }
 }
 
-class IssueGroupTreeItem extends vscode.TreeItem {
-  constructor(
-    public readonly group: IssueGroup,
-    private readonly allIssues: Issue[],
-    private readonly overrideIssues?: Issue[]
-  ) {
-    const issues = overrideIssues ?? allIssues.filter((issue) => issue.groupId === group.id);
-    super(
-      `${group.name} (${issues.length})`,
-      issues.length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
-    );
-    this.id = group.id;
-    this.contextValue = group.id === '__ungrouped__' ? 'localIssuesUngrouped' : 'localIssuesGroup';
-    this.iconPath = new vscode.ThemeIcon('folder');
-    this.description = issues.length ? `${issues.length} issue${issues.length === 1 ? '' : 's'}` : 'Empty';
-  }
-}
-
-class IssueTreeItem extends vscode.TreeItem {
+class AllTasksIssueTreeItem extends vscode.TreeItem {
   constructor(public readonly issue: Issue, private readonly people: { id: string; name: string }[]) {
     super(
       `${priorityIndicator(issue.priority)} · ${getPersonLabel(issue.personId, people)} · ${formatDueDate(issue.dueDate)} · ${issue.title}`,
@@ -143,14 +95,13 @@ class IssueTreeItem extends vscode.TreeItem {
     );
 
     this.id = issue.id;
-    this.contextValue = 'localIssuesIssue';
+    this.contextValue = 'localIssuesAllTasksIssue';
     this.command = {
       command: 'localIssues.editIssue',
       title: 'Edit Issue',
       arguments: [issue.id],
     };
     this.tooltip = buildIssueTooltip(issue);
-    this.description = undefined;
     this.iconPath = new vscode.ThemeIcon(issueStatusIcon(issue.status), issueStatusColor(issue.status));
   }
 }

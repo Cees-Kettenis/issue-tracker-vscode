@@ -10,14 +10,22 @@ export type IssuePriority = (typeof ISSUE_PRIORITIES)[number];
  * Schema notes:
  * - `version` tracks the file format and currently uses `1`
  * - `groups` always contains `{ id, name }` entries
+ * - `people` always contains `{ id, name }` entries
  * - `issues` always contains the full issue records below
  * - `status` is limited to `todo`, `in-progress`, `blocked`, or `done`
  * - `priority` is limited to `low`, `medium`, or `high`
+ * - `dueDate` is stored as an optional `YYYY-MM-DD` string
+ * - `personId` links to an entry in `people` when an issue is assigned
  *
  * Future schema changes should keep older versions readable through a
  * migration step in the repository/validation layer.
  */
 export interface IssueGroup {
+  id: string;
+  name: string;
+}
+
+export interface IssuePerson {
   id: string;
   name: string;
 }
@@ -29,6 +37,8 @@ export interface Issue {
   groupId: string;
   status: IssueStatus;
   priority: IssuePriority;
+  dueDate?: string;
+  personId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -39,6 +49,8 @@ export interface IssueInput {
   groupId: string;
   status: IssueStatus;
   priority: IssuePriority;
+  dueDate?: string;
+  personId?: string;
 }
 
 export interface IssueUpdateInput {
@@ -47,11 +59,18 @@ export interface IssueUpdateInput {
   groupId?: string;
   status?: IssueStatus;
   priority?: IssuePriority;
+  dueDate?: string;
+  personId?: string;
+}
+
+export interface IssuePersonInput {
+  name: string;
 }
 
 export interface IssuesFile {
   version: number;
   groups: IssueGroup[];
+  people: IssuePerson[];
   issues: Issue[];
 }
 
@@ -64,6 +83,7 @@ export function createEmptyIssuesFile(): IssuesFile {
   return {
     version: DEFAULT_ISSUES_FILE_VERSION,
     groups: [],
+    people: [],
     issues: [],
   };
 }

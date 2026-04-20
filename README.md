@@ -10,14 +10,16 @@ Local Issues is a VS Code extension that keeps a lightweight issue tracker insid
 ## What It Does
 
 - Groups and issues are shown in a custom `Issues` sidebar.
-- Issue rows show a status icon, a colored priority dot, and the title.
-- Hovering an issue shows the rendered Markdown description.
+- Issue rows show a progress icon, a priority circle, the assignee, the due date, and the title.
+- Hovering an issue shows only the rendered Markdown description.
 - Selecting an issue opens the details webview for editing.
 - Creating a new issue opens the details webview instead of a quick-pick flow.
+- A separate `All Tasks` tree view shows every existing issue in due-date order without group folders.
 - Groups can be created and deleted from the tree.
+- People can be created once and selected from issue editors.
 - Deleting a group cascades to all issues inside it.
 - Issues can be edited, completed, and deleted from the tree or details view.
-- Priority and status are visible in the tree and reflected in the details view.
+- Priority, status, due date, and assignee are visible in the details view.
 - Completed issues can be hidden from the tree.
 
 ## How To Use
@@ -27,6 +29,7 @@ Local Issues is a VS Code extension that keeps a lightweight issue tracker insid
 3. Use the tree toolbar or the inline row actions to create groups and issues.
 4. Click an issue to open its details and edit its content.
 5. Hover an issue row to read the rendered Markdown description.
+6. Open the `All Tasks` view to edit existing issues in due-date order without groups.
 
 ## Tree Layout
 
@@ -35,17 +38,18 @@ The issue tree is organized like this:
 - group rows at the top level
 - issues nested under each group
 - issue order inside each group:
-  - high
-  - medium
-  - low
+  - due date
+  - then title as the tie-breaker
 
 Issue rows are displayed in the form:
 
 ```text
-status icon + priority dot + title
+progress icon + priority circle + person + due date + title
 ```
 
 Group rows show the group name and issue count.
+
+Dates shown in the UI use `dd/mm/yy` formatting. The JSON file still stores due dates as `YYYY-MM-DD`.
 
 ## Commands
 
@@ -53,6 +57,7 @@ Available commands:
 
 - `Local Issues: Create Issue`
 - `Local Issues: Create Group`
+- `Local Issues: Add Person`
 - `Local Issues: Delete Group`
 - `Local Issues: Edit Issue`
 - `Local Issues: Complete Issue`
@@ -98,6 +103,9 @@ The `issues.json` file uses a versioned JSON structure:
   "groups": [
     { "id": "production", "name": "Production" }
   ],
+  "people": [
+    { "id": "alex", "name": "Alex" }
+  ],
   "issues": [
     {
       "id": "iss_001",
@@ -106,6 +114,8 @@ The `issues.json` file uses a versioned JSON structure:
       "groupId": "production",
       "status": "todo",
       "priority": "high",
+      "dueDate": "2026-04-20",
+      "personId": "alex",
       "createdAt": "2026-04-10T10:00:00Z",
       "updatedAt": "2026-04-10T10:00:00Z"
     }
@@ -116,6 +126,9 @@ The `issues.json` file uses a versioned JSON structure:
 - `version` is currently `1`
 - `status` must be one of `todo`, `in-progress`, `blocked`, or `done`
 - `priority` must be one of `low`, `medium`, or `high`
+- `dueDate` is optional and uses `YYYY-MM-DD` in storage
+- `personId` is optional and points at a person in the `people` array
+- older files without `dueDate` or `people` still load correctly
 
 ## How To Develop
 

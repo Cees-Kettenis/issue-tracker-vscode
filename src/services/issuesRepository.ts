@@ -1,9 +1,23 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { createEmptyIssuesFile, type Issue, type IssueGroup, type IssuesFile, type IssueInput, type IssueUpdateInput } from '../models';
+import {
+  createEmptyIssuesFile,
+  type Issue,
+  type IssueGroup,
+  type IssueInput,
+  type IssuePerson,
+  type IssuesFile,
+  type IssueUpdateInput,
+} from '../models';
 import { createId } from '../utils/ids';
 import { nowIso } from '../utils/time';
-import { normalizeIssueInput, normalizeIssueUpdateInput, normalizeIssuesFile, requireGroupName } from '../utils/validation';
+import {
+  normalizeIssueInput,
+  normalizeIssueUpdateInput,
+  normalizeIssuesFile,
+  requireGroupName,
+  requirePersonName,
+} from '../utils/validation';
 import { slugify } from '../utils/strings';
 import { IssuesSettingsService } from './settings';
 
@@ -66,6 +80,27 @@ export class IssuesRepository {
     return group;
   }
 
+  async createPerson(name: string): Promise<IssuePerson> {
+    const file = await this.load();
+    const personName = requirePersonName(name);
+    this.log(`repository.createPerson -> "${personName}"`);
+
+    const existing = file.people.find((person) => person.name.toLowerCase() === personName.toLowerCase());
+    if (existing) {
+      this.log(`repository.createPerson <- existing ${existing.id}`);
+      return existing;
+    }
+
+    const baseId = slugify(personName) || 'person';
+    const personId = this.ensureUniqueId(baseId, file.people.map((person) => person.id));
+    const person: IssuePerson = { id: personId, name: personName };
+
+    file.people.push(person);
+    await this.save(file);
+    this.log(`repository.createPerson <- ${person.id}`);
+    return person;
+  }
+
   async deleteGroup(groupId: string): Promise<void> {
     const file = await this.load();
     this.log(`repository.deleteGroup -> ${groupId}`);
@@ -85,12 +120,19 @@ export class IssuesRepository {
     const file = await this.load();
     const normalized = normalizeIssueInput(input);
     this.log(
-      `repository.createIssue -> title="${normalized.title}" groupId=${normalized.groupId} status=${normalized.status} priority=${normalized.priority}`
+      `repository.createIssue -> title="${normalized.title}" groupId=${normalized.groupId} status=${normalized.status} priority=${normalized.priority} dueDate=${normalized.dueDate ?? '(none)'} personId=${normalized.personId ?? '(none)'}`
     );
     const group = file.groups.find((entry) => entry.id === normalized.groupId);
 
     if (!group) {
       throw new Error(`Unknown group id "${normalized.groupId}". Create the group first.`);
+    }
+
+    if (normalized.personId) {
+      const personExists = file.people.some((person) => person.id === normalized.personId);
+      if (!personExists) {
+        throw new Error(`Unknown person id "${normalized.personId}". Create the person first.`);
+      }
     }
 
     const timestamp = nowIso();
@@ -101,6 +143,8 @@ export class IssuesRepository {
       groupId: normalized.groupId,
       status: normalized.status,
       priority: normalized.priority,
+      dueDate: normalized.dueDate,
+      personId: normalized.personId,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -127,6 +171,13 @@ export class IssuesRepository {
       const groupExists = file.groups.some((group) => group.id === normalized.groupId);
       if (!groupExists) {
         throw new Error(`Unknown group id "${normalized.groupId}".`);
+      }
+    }
+
+    if (normalized.personId) {
+      const personExists = file.people.some((person) => person.id === normalized.personId);
+      if (!personExists) {
+        throw new Error(`Unknown person id "${normalized.personId}".`);
       }
     }
 

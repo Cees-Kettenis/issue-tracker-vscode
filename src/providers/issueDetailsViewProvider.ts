@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 import * as vscode from 'vscode';
-import type { Issue, IssueGroup, IssuePriority, IssueStatus } from '../models';
+import type { Issue, IssueGroup, IssuePerson, IssuePriority, IssueStatus } from '../models';
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '../models';
 import { renderMarkdown } from '../utils/markdown';
 import { escapeHtml } from '../utils/strings';
@@ -12,6 +12,7 @@ interface IssueFormState {
   mode: 'create' | 'edit';
   issue: Issue | undefined;
   groups: IssueGroup[];
+  people: IssuePerson[];
   draftGroupId?: string;
   storePath?: string;
   error?: string;
@@ -123,6 +124,7 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
         mode: this.mode,
         issue,
         groups: file.groups,
+        people: file.people,
         draftGroupId: this.draftGroupId,
         storePath: await this.settings.resolveCurrentStorePath(),
       };
@@ -131,6 +133,7 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
         mode: this.mode,
         issue: undefined,
         groups: [],
+        people: [],
         draftGroupId: this.draftGroupId,
         storePath: undefined,
         error: error instanceof Error ? error.message : String(error),
@@ -145,9 +148,11 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
     const newGroupName = String(payload.newGroupName ?? '').trim();
     const status = String(payload.status ?? 'todo') as IssueStatus;
     const priority = String(payload.priority ?? 'medium') as IssuePriority;
+    const dueDate = String(payload.dueDate ?? '').trim();
+    const personId = String(payload.personId ?? '').trim();
 
     this.log(
-      `webview.save payload -> title="${title}" groupId="${groupId}" newGroupName="${newGroupName}" status="${status}" priority="${priority}"`
+      `webview.save payload -> title="${title}" groupId="${groupId}" newGroupName="${newGroupName}" status="${status}" priority="${priority}" dueDate="${dueDate}" personId="${personId}"`
     );
 
     if (!title) {
@@ -177,6 +182,8 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
         groupId: resolvedGroupId,
         status,
         priority,
+        dueDate,
+        personId,
       });
       this.log(`webview.save updated issue -> ${updated.id}`);
       await this.selectIssue(updated.id);
@@ -189,6 +196,8 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
         groupId: resolvedGroupId,
         status,
         priority,
+        dueDate,
+        personId,
       });
       this.log(`webview.save created issue -> ${created.id}`);
       await this.selectIssue(created.id);
@@ -234,6 +243,22 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
     const hasGroups = state.groups.length > 0;
     const selectedStatus = issue?.status ?? 'todo';
     const selectedPriority = issue?.priority ?? 'medium';
+    const selectedDueDate = issue?.dueDate ?? '';
+    const selectedPersonId = issue?.personId ?? '';
+    const personOptions = [
+      `<option value=""${!selectedPersonId ? ' selected' : ''}>N/A</option>`,
+      ...state.people.map(
+        (person) =>
+          `<option value="${escapeHtml(person.id)}"${person.id === selectedPersonId ? ' selected' : ''}>${escapeHtml(person.name)}</option>`
+      ),
+    ];
+    if (selectedPersonId && !state.people.some((person) => person.id === selectedPersonId)) {
+      personOptions.splice(
+        1,
+        0,
+        `<option value="${escapeHtml(selectedPersonId)}" selected>Unknown person (${escapeHtml(selectedPersonId)})</option>`
+      );
+    }
 
     const title = issue ? 'Edit Issue' : 'Create New Issue';
     const errorBanner = state.error ? `<div class="error">${escapeHtml(state.error)}</div>` : '';
@@ -324,6 +349,14 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
               display: grid;
               grid-template-columns: repeat(3, minmax(0, 1fr));
               gap: 10px;
+            }
+            .row.two-up {
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+            .hint {
+              color: var(--muted);
+              font-size: 0.8rem;
+              line-height: 1.35;
             }
             .actions {
               display: flex;
@@ -504,6 +537,18 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
                 </span>
                 <select id="priority" name="priority">
                   ${priorityOptions}
+                </select>
+              </label>
+            </div>
+            <div class="row two-up">
+              <label>
+                Due date
+                <input id="dueDate" name="dueDate" type="date" value="${escapeHtml(selectedDueDate)}" />
+              </label>
+              <label>
+                Assigned To
+                <select id="personId" name="personId">
+                  ${personOptions.join('')}
                 </select>
               </label>
             </div>
@@ -710,7 +755,9 @@ function postSave() {
       groupId: document.getElementById('groupId') ? document.getElementById('groupId').value : '',
       newGroupName: document.getElementById('newGroupName') ? document.getElementById('newGroupName').value : '',
       status: document.getElementById('status').value,
-      priority: document.getElementById('priority').value
+      priority: document.getElementById('priority').value,
+      dueDate: document.getElementById('dueDate').value,
+      personId: document.getElementById('personId').value,
     }
   });
 }

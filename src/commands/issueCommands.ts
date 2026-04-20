@@ -61,6 +61,27 @@ export function registerIssueCommands(
   );
 
   disposables.push(
+    vscode.commands.registerCommand('localIssues.createPerson', async () => {
+      try {
+        const name = await vscode.window.showInputBox({
+          title: 'Create person',
+          prompt: 'Enter a person name.',
+          ignoreFocusOut: true,
+        });
+
+        if (!name) {
+          return;
+        }
+
+        await services.repository.createPerson(name);
+        await services.refreshViews();
+      } catch (error) {
+        await vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      }
+    })
+  );
+
+  disposables.push(
     vscode.commands.registerCommand('localIssues.deleteGroup', async (groupTarget?: unknown) => {
       try {
         const resolvedGroupId = extractGroupId(groupTarget);

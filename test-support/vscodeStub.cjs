@@ -46,6 +46,23 @@ function createVscodeStub() {
     }
   }
 
+  class ThemeColor {
+    constructor(id) {
+      this.id = id;
+    }
+  }
+
+  class MarkdownString {
+    constructor(value = '') {
+      this.value = value;
+      this.supportThemeIcons = false;
+    }
+
+    appendMarkdown(value) {
+      this.value += String(value);
+    }
+  }
+
   const stub = {
     __setConfiguration(section, key, value) {
       configuration.set(`${section}.${key}`, value);
@@ -61,6 +78,8 @@ function createVscodeStub() {
     },
     EventEmitter,
     ThemeIcon,
+    ThemeColor,
+    MarkdownString,
     TreeItem,
     TreeItemCollapsibleState: {
       None: 0,

@@ -1,4 +1,12 @@
-import type { IssueInput, IssuePriority, IssueStatus, IssuesFile, IssueGroup, IssueUpdateInput } from '../models';
+import type {
+  IssueInput,
+  IssuePerson,
+  IssuePriority,
+  IssueStatus,
+  IssuesFile,
+  IssueGroup,
+  IssueUpdateInput,
+} from '../models';
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '../models';
 
 function isString(value: unknown): value is string {
@@ -35,6 +43,32 @@ export function requireGroupName(name: unknown): string {
   return normalized;
 }
 
+export function requirePersonName(name: unknown): string {
+  const normalized = normalizeText(name);
+  if (!normalized) {
+    throw new Error('Person name is required.');
+  }
+
+  return normalized;
+}
+
+function normalizeOptionalDate(value: unknown): string | undefined {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  const normalized = normalizeText(value);
+  if (!normalized) {
+    return undefined;
+  }
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    throw new Error(`Invalid due date: ${String(value)}`);
+  }
+
+  return normalized;
+}
+
 export function normalizeIssueInput(input: IssueInput): IssueInput {
   return {
     title: requireIssueTitle(input.title),
@@ -42,6 +76,8 @@ export function normalizeIssueInput(input: IssueInput): IssueInput {
     groupId: requireGroupName(input.groupId),
     status: isIssueStatus(input.status) ? input.status : 'todo',
     priority: isIssuePriority(input.priority) ? input.priority : 'medium',
+    dueDate: normalizeOptionalDate(input.dueDate),
+    personId: normalizeText(input.personId) || undefined,
   };
 }
 
@@ -74,6 +110,14 @@ export function normalizeIssueUpdateInput(input: IssueUpdateInput): IssueUpdateI
     result.priority = input.priority;
   }
 
+  if (input.dueDate !== undefined) {
+    result.dueDate = normalizeOptionalDate(input.dueDate);
+  }
+
+  if (input.personId !== undefined) {
+    result.personId = normalizeText(input.personId) || undefined;
+  }
+
   return result;
 }
 
@@ -93,6 +137,22 @@ export function normalizeGroup(group: unknown): IssueGroup {
   return { id, name };
 }
 
+export function normalizePerson(person: unknown): IssuePerson {
+  if (!person || typeof person !== 'object') {
+    throw new Error('Invalid person entry in issues file.');
+  }
+
+  const record = person as Record<string, unknown>;
+  const id = normalizeText(record.id);
+  const name = normalizeText(record.name);
+
+  if (!id || !name) {
+    throw new Error('Each person must have an id and a name.');
+  }
+
+  return { id, name };
+}
+
 export function normalizeIssuesFile(raw: unknown): IssuesFile {
   if (!raw || typeof raw !== 'object') {
     throw new Error('The issues file does not contain valid JSON.');
@@ -102,14 +162,16 @@ export function normalizeIssuesFile(raw: unknown): IssuesFile {
   const version = typeof record.version === 'number' ? record.version : 1;
 
   const groups = Array.isArray(record.groups) ? record.groups.map(normalizeGroup) : [];
+  const people = Array.isArray(record.people) ? record.people.map(normalizePerson) : [];
 
   const issues = Array.isArray(record.issues)
     ? record.issues.map((issue) => normalizeIssueRecord(issue))
     : [];
 
   return {
-    version,
+    version: 1,
     groups,
+    people,
     issues,
   };
 }
@@ -126,6 +188,8 @@ function normalizeIssueRecord(issue: unknown) {
   const groupId = normalizeText(record.groupId);
   const status = record.status;
   const priority = record.priority;
+  const dueDate = normalizeOptionalDate(record.dueDate);
+  const personId = normalizeText(record.personId) || undefined;
   const createdAt = normalizeText(record.createdAt);
   const updatedAt = normalizeText(record.updatedAt);
 
@@ -148,6 +212,8 @@ function normalizeIssueRecord(issue: unknown) {
     groupId,
     status,
     priority,
+    dueDate,
+    personId,
     createdAt,
     updatedAt,
   };
