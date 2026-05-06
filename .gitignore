@@ -4,3 +4,4 @@ out/
 .vscode/issues.json
 *.log
 plan.md
+publish.md

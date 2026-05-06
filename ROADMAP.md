@@ -8,9 +8,6 @@ This document tracks planned work for Local Issues. The list is intentionally fl
 - Add more keyboard shortcuts for common issue workflows.
 - Add issue relationships, starting with blocked-by links.
 - Add bulk actions for issue editing.
-- Allow the group to be renamed.
-- Remove the duplicate amount of issues in the list view.
-- Allow duplicate issue
 
 ## Status
 
