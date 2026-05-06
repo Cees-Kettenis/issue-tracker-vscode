@@ -9,6 +9,8 @@ import type {
 } from '../models';
 import { ISSUE_PRIORITIES, ISSUE_STATUSES } from '../models';
 
+// Normalization/validation gate for all data entering or leaving persistence.
+// Keep this strict so providers/commands can stay simple and trust typed output.
 function isString(value: unknown): value is string {
   return typeof value === 'string';
 }

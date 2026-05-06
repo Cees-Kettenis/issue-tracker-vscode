@@ -5,6 +5,7 @@ import { resolveWorkspaceFolder } from './workspace';
 export const DEFAULT_ISSUES_FILE_PATH = '.vscode/issues.json';
 const HIDE_COMPLETED_KEY = 'localIssues.hideCompleted';
 
+// Encapsulates extension settings and derived state stored in workspaceState.
 export class IssuesSettingsService {
   constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -31,6 +32,7 @@ export class IssuesSettingsService {
 
   resolveStorePath(workspaceFolder: vscode.WorkspaceFolder): string {
     const configured = this.getFilePathSetting();
+    // Relative paths are rooted in the selected workspace folder.
     return path.isAbsolute(configured) ? configured : path.join(workspaceFolder.uri.fsPath, configured);
   }
 

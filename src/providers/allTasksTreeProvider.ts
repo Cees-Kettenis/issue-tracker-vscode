@@ -9,6 +9,7 @@ import { sortIssuesByDueDate } from '../utils/sorting';
 type AllTasksTreeNode = AllTasksIssueTreeItem | TreeMessageItem;
 export type { AllTasksTreeNode };
 
+// Flat tree provider for "All Tasks", sorted globally by due date.
 export class AllTasksTreeProvider implements vscode.TreeDataProvider<AllTasksTreeNode> {
   private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<AllTasksTreeNode | undefined | void>();
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
@@ -21,6 +22,7 @@ export class AllTasksTreeProvider implements vscode.TreeDataProvider<AllTasksTre
     private readonly settings: IssuesSettingsService
   ) {}
 
+  // Reload data and invalidate the full flat-list tree.
   async refresh(): Promise<void> {
     try {
       this.issuesFile = await this.repository.load();
@@ -45,6 +47,7 @@ export class AllTasksTreeProvider implements vscode.TreeDataProvider<AllTasksTre
     return element;
   }
 
+  // All Tasks is a single-level list, so only root children are produced.
   async getChildren(element?: AllTasksTreeNode): Promise<AllTasksTreeNode[]> {
     if (this.errorMessage) {
       return [
@@ -65,6 +68,7 @@ export class AllTasksTreeProvider implements vscode.TreeDataProvider<AllTasksTre
   }
 
   private getRootItems(hideCompleted: boolean): AllTasksTreeNode[] {
+    // Produce a due-date-sorted list of every issue across groups.
     const issues = sortIssuesByDueDate(
       hideCompleted ? this.issuesFile.issues.filter((issue) => issue.status !== 'done') : [...this.issuesFile.issues]
     );

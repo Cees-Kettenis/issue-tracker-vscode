@@ -21,6 +21,8 @@ import {
 import { slugify } from '../utils/strings';
 import { IssuesSettingsService } from './settings';
 
+// Persistence boundary for issue data.
+// All file I/O and schema normalization flow through this class so UI layers stay thin.
 export class IssuesRepository {
   constructor(
     private readonly settings: IssuesSettingsService,
@@ -48,6 +50,7 @@ export class IssuesRepository {
   }
 
   async importFromFile(sourcePath: string): Promise<IssuesFile> {
+    // Import never auto-seeds the source; it must exist and contain valid schema.
     const imported = await this.readStoreFile(sourcePath, false, 'import');
     await this.save(imported);
     return imported;
@@ -262,6 +265,7 @@ export class IssuesRepository {
 
     try {
       const raw = await fs.readFile(storePath, 'utf8');
+      // Always normalize after parsing so older or partially malformed files fail fast.
       return normalizeIssuesFile(JSON.parse(raw));
     } catch (error) {
       if (error instanceof SyntaxError) {
@@ -312,6 +316,7 @@ export class IssuesRepository {
   }
 
   private async writeAtomic(filePath: string, content: string): Promise<void> {
+    // Write-through-temp then rename minimizes corruption risk on crashes/interruption.
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
     await fs.writeFile(tempPath, content, 'utf8');

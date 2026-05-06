@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 
+// Centralized workspace resolution policy.
+// Today the extension operates on a single folder, even in multi-root workspaces.
 export async function resolveWorkspaceFolder(): Promise<vscode.WorkspaceFolder | undefined> {
   const folders = vscode.workspace.workspaceFolders ?? [];
 

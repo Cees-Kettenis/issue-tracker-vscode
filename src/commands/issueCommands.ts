@@ -7,6 +7,7 @@ import { IssuesSettingsService } from '../services/settings';
 import { IssuesTreeProvider } from '../providers/issuesTreeProvider';
 import { IssueDetailsViewProvider } from '../providers/issueDetailsViewProvider';
 
+// Command layer: translates VS Code command invocations into repository/provider operations.
 export interface IssueCommandServices {
   repository: IssuesRepository;
   treeProvider: IssuesTreeProvider;
@@ -19,6 +20,7 @@ export function registerIssueCommands(
   context: vscode.ExtensionContext,
   services: IssueCommandServices
 ): vscode.Disposable[] {
+  // Register every extension command in one place so behavior is easy to audit.
   const disposables: vscode.Disposable[] = [];
 
   disposables.push(
@@ -359,6 +361,8 @@ async function resolveIssueId(
   issueTarget: unknown,
   detailsProvider: IssueDetailsViewProvider
 ): Promise<string | undefined> {
+  // Commands can be invoked from tree context menus or command palette.
+  // Fall back to the currently selected issue in the details panel.
   const resolvedIssueId = extractIssueId(issueTarget) ?? detailsProvider.getCurrentIssueId();
   if (!resolvedIssueId) {
     await vscode.window.showInformationMessage('Select an issue first.');
@@ -371,6 +375,7 @@ async function openIssueEditor(
   issueTarget: unknown,
   services: IssueCommandServices
 ): Promise<void> {
+  // Single entry point for commands that should focus/select an issue in the details view.
   const resolvedIssueId = await resolveIssueId(issueTarget, services.detailsProvider);
   if (!resolvedIssueId) {
     return;

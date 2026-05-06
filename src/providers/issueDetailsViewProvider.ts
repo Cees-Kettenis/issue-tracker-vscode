@@ -18,6 +18,8 @@ interface IssueFormState {
   error?: string;
 }
 
+// Webview-backed editor for creating and updating a single issue.
+// The provider owns selection/edit mode and marshals all form payloads to repository calls.
 export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
   private view: vscode.WebviewView | undefined;
   private selectedIssueId: string | undefined;
@@ -32,10 +34,12 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
     private readonly log: (message: string) => void = () => undefined
   ) {}
 
+  // Used by commands/refresh orchestration to track which issue is being edited.
   getCurrentIssueId(): string | undefined {
     return this.selectedIssueId;
   }
 
+  // Switch the panel into edit mode for a specific issue.
   async selectIssue(issueId: string | undefined): Promise<void> {
     this.selectedIssueId = issueId;
     this.mode = issueId ? 'edit' : 'create';
@@ -45,6 +49,7 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
     await this.render();
   }
 
+  // Switch the panel into create mode, optionally preselecting a group.
   async showNewIssue(groupId?: string): Promise<void> {
     this.selectedIssueId = undefined;
     this.mode = 'create';
@@ -52,10 +57,12 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
     await this.render();
   }
 
+  // Re-render with the latest repository state.
   async refresh(): Promise<void> {
     await this.render();
   }
 
+  // Bind webview message handlers and boot the initial HTML render.
   resolveWebviewView(view: vscode.WebviewView): void | Thenable<void> {
     this.view = view;
     view.webview.options = {
@@ -111,6 +118,7 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
     this.view.webview.html = this.getHtml(viewModel);
   }
 
+  // Build a view model that isolates UI rendering from repository/errors.
   private async buildState(): Promise<IssueFormState> {
     try {
       const file = await this.repository.load();
@@ -119,6 +127,7 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
         : undefined;
 
       if (this.mode === 'edit' && this.selectedIssueId && !issue) {
+        // Selected issue may have been deleted externally; gracefully fall back to create mode.
         this.selectedIssueId = undefined;
         this.mode = 'create';
       }
@@ -144,6 +153,7 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  // Validate/normalize form payload and route it to create vs update flows.
   private async saveFromWebview(payload: Record<string, unknown>): Promise<void> {
     const title = String(payload.title ?? '').trim();
     const description = String(payload.description ?? '').trim();
@@ -250,6 +260,8 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
   }
 
   private getHtml(state: IssueFormState): string {
+    // The webview is rendered as a full HTML document each refresh.
+    // All dynamic values are escaped before interpolation.
     const nonce = crypto.randomBytes(16).toString('base64');
     const webviewScript = this.getWebviewScript();
     const issue = state.issue;

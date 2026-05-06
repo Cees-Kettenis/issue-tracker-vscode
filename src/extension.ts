@@ -4,6 +4,7 @@ import { AllTasksTreeProvider, IssueDetailsViewProvider, IssuesTreeProvider } fr
 import type { IssueTreeNode, AllTasksTreeNode } from './providers';
 import { IssuesFileWatcher, IssuesRepository, IssuesSettingsService } from './services';
 
+// Extension composition root: wires services, providers, commands, and refresh orchestration.
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const output = vscode.window.createOutputChannel('Local Issues');
   const log = (message: string): void => {
@@ -29,6 +30,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     await refreshViews();
   });
 
+  // Central refresh path used by commands, file-watch events, and config/workspace changes.
+  // It also keeps both trees focused on the currently edited issue when possible.
   async function refreshViews(): Promise<void> {
     log('refreshViews -> start');
     await treeProvider.refresh();

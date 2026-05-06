@@ -1,5 +1,7 @@
 import { escapeHtml } from './strings';
 
+// Small, safe Markdown subset renderer used in tooltips and webview previews.
+// Rendering is HTML-escaped first, then limited inline/block formatting is applied.
 export function renderMarkdown(value: string): string {
   const lines = value.replace(/\r\n?/g, '\n').split('\n');
   const blocks: string[] = [];

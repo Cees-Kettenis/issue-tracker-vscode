@@ -5,6 +5,7 @@ import { IssuesSettingsService } from './settings';
 
 type RefreshCallback = () => Promise<void>;
 
+// Watches the configured store file and debounces refreshes to avoid event storms.
 export class IssuesFileWatcher implements vscode.Disposable {
   private watcher: fs.FSWatcher | undefined;
   private refreshTimer: NodeJS.Timeout | undefined;
@@ -51,6 +52,7 @@ export class IssuesFileWatcher implements vscode.Disposable {
       clearTimeout(this.refreshTimer);
     }
 
+    // Debounce is important because many editors trigger multiple writes per save.
     this.refreshTimer = setTimeout(() => {
       void this.onRefresh();
     }, 150);

@@ -21,6 +21,8 @@ interface AllTasksViewState {
   error?: string;
 }
 
+// Webview that exposes all issues as an inline-editable list.
+// Unlike the tree view, this is optimized for quick bulk edits.
 export class AllTasksViewProvider implements vscode.WebviewViewProvider {
   private view: vscode.WebviewView | undefined;
   private issuesFile: IssuesFile = createEmptyIssuesFile();
@@ -33,6 +35,7 @@ export class AllTasksViewProvider implements vscode.WebviewViewProvider {
     private readonly log: (message: string) => void = () => undefined
   ) {}
 
+  // Refresh the cached issues snapshot and repaint the webview if mounted.
   async refresh(): Promise<void> {
     try {
       this.issuesFile = await this.repository.load();
@@ -46,6 +49,7 @@ export class AllTasksViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  // Register message handlers from the embedded script and render immediately.
   resolveWebviewView(view: vscode.WebviewView): void | Thenable<void> {
     this.view = view;
     view.webview.options = {
@@ -88,6 +92,7 @@ export class AllTasksViewProvider implements vscode.WebviewViewProvider {
     this.view.webview.html = this.getHtml(await this.buildState());
   }
 
+  // Compute stable render state, preserving last known data when errors occur.
   private async buildState(): Promise<AllTasksViewState> {
     if (this.errorMessage) {
       return {
@@ -113,6 +118,7 @@ export class AllTasksViewProvider implements vscode.WebviewViewProvider {
     }
   }
 
+  // Persist one row edit from the webview and fan out refresh to all views.
   private async saveIssue(payload: Record<string, unknown>): Promise<void> {
     const issueId = String(payload.issueId ?? '').trim();
     if (!issueId) {
@@ -146,6 +152,7 @@ export class AllTasksViewProvider implements vscode.WebviewViewProvider {
     });
 
     this.log(`allTasks.save -> ${updated.id}`);
+    // Refresh all surfaces so tree and details stay consistent with the edited row.
     await this.refreshViews();
     await this.render();
   }

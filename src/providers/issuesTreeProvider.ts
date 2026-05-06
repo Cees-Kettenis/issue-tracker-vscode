@@ -9,6 +9,7 @@ import { sortIssuesByDueDate } from '../utils/sorting';
 type IssueTreeNode = IssueGroupTreeItem | IssueTreeItem | TreeMessageItem;
 export type { IssueTreeNode };
 
+// Tree provider for the grouped Issues view in the activity bar.
 export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeNode> {
   private readonly onDidChangeTreeDataEmitter = new vscode.EventEmitter<IssueTreeNode | undefined | void>();
   readonly onDidChangeTreeData = this.onDidChangeTreeDataEmitter.event;
@@ -21,6 +22,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeNode
     private readonly settings: IssuesSettingsService
   ) {}
 
+  // Reload persisted data and notify VS Code to redraw the tree.
   async refresh(): Promise<void> {
     try {
       this.issuesFile = await this.repository.load();
@@ -45,6 +47,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeNode
     return element;
   }
 
+  // Return either top-level group nodes or the issues under a selected group node.
   async getChildren(element?: IssueTreeNode): Promise<IssueTreeNode[]> {
     if (this.errorMessage) {
       return [
@@ -68,6 +71,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeNode
   }
 
   private async getRootItems(): Promise<IssueTreeNode[]> {
+    // Build the first level of the tree and include empty-state guidance when needed.
     const hideCompleted = await this.settings.getHideCompleted();
     const issues = hideCompleted
       ? this.issuesFile.issues.filter((issue) => issue.status !== 'done')
@@ -88,6 +92,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeNode
     }
 
     const knownGroupIds = new Set(this.issuesFile.groups.map((group) => group.id));
+    // Orphaned issues can exist after imports/manual edits; show them explicitly.
     const orphans = issues.filter((issue) => !knownGroupIds.has(issue.groupId));
     const groupItems = this.issuesFile.groups.map((group) => new IssueGroupTreeItem(group, issues));
 
@@ -99,6 +104,7 @@ export class IssuesTreeProvider implements vscode.TreeDataProvider<IssueTreeNode
   }
 
   private async getIssuesForGroup(groupId: string): Promise<IssueTreeNode[]> {
+    // Return sorted issues for one group, respecting the hide-completed preference.
     const hideCompleted = await this.settings.getHideCompleted();
     const issues = this.issuesFile.issues.filter((issue) => issue.groupId === groupId);
     const filtered = hideCompleted ? issues.filter((issue) => issue.status !== 'done') : issues;
