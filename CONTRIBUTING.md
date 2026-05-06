@@ -18,6 +18,10 @@ Thanks for contributing to Local Issues.
   - `corepack pnpm run watch`
 - Run tests:
   - `corepack pnpm test`
+- Run coverage report:
+  - `corepack pnpm run coverage`
+- Run coverage gate (required before PR):
+  - `corepack pnpm run coverage:check`
 
 ## Run the Extension Locally
 
@@ -31,7 +35,16 @@ Thanks for contributing to Local Issues.
 - Include a clear description of what changed and why.
 - Add or update tests for behavior changes.
 - Update `README.md` or `CHANGELOG.md` if user-facing behavior changed.
-- Ensure `compile` and `test` pass before opening a PR.
+- Ensure `compile`, `test`, and `coverage:check` pass before opening a PR.
+
+## Coverage Policy
+
+- CI enforces per-file minimum coverage using `c8`.
+- Required minimums for each file:
+  - Branches: `80%`
+  - Functions: `80%`
+  - Lines: `80%`
+  - Statements: `80%`
 
 ## Coding Guidelines
 

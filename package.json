@@ -310,11 +310,14 @@
     "vscode:prepublish": "tsc -p .",
     "prepublish": "tsc -p .",
     "lint": "tsc -p . --noEmit",
-    "test": "tsc -p . && node --test test"
+    "test": "tsc -p . && node --test test/*.test.js",
+    "coverage": "c8 --reporter=text --reporter=html node --test test/*.test.js",
+    "coverage:check": "c8 --check-coverage --per-file --branches 80 --functions 80 --lines 80 --statements 80 node --test test/*.test.js"
   },
   "devDependencies": {
     "@types/node": "^22.13.4",
     "@types/vscode": "^1.86.0",
+    "c8": "^11.0.0",
     "typescript": "^5.8.3"
   },
   "packageManager": "pnpm@10.33.3+sha512.a19744364a7e248b92657a4ca5973f9354d21caf982579674b1c539f32c7420c47138ad8b1254df07aba9bc782d9b3029e3db34d5dbff974326eb74dac8ff489"

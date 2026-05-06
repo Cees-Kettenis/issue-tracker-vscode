@@ -5,3 +5,5 @@ out/
 *.log
 plan.md
 publish.md
+coverage/
+covarage/

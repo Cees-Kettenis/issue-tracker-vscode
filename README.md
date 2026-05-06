@@ -170,6 +170,33 @@ Or keep TypeScript rebuilding automatically:
 corepack pnpm run watch
 ```
 
+### Test And Coverage
+
+Run tests:
+
+```bash
+corepack pnpm test
+```
+
+Run a coverage report:
+
+```bash
+corepack pnpm run coverage
+```
+
+Run the enforced coverage gate (used in CI):
+
+```bash
+corepack pnpm run coverage:check
+```
+
+Coverage gate policy:
+
+- per-file Branches >= 80%
+- per-file Functions >= 80%
+- per-file Lines >= 80%
+- per-file Statements >= 80%
+
 ### Run In Dev
 
 1. Open this repository in VS Code.
