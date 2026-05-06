@@ -78,6 +78,9 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
           case 'delete':
             await this.deleteSelectedIssue();
             break;
+          case 'duplicate':
+            await this.duplicateSelectedIssue();
+            break;
           case 'newIssue':
             await this.showNewIssue();
             break;
@@ -225,6 +228,17 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
     this.log(`webview.delete -> ${this.selectedIssueId}`);
     this.selectedIssueId = undefined;
     this.mode = 'create';
+    await this.refreshViews();
+  }
+
+  private async duplicateSelectedIssue(): Promise<void> {
+    if (!this.selectedIssueId) {
+      return;
+    }
+
+    const duplicated = await this.repository.duplicateIssue(this.selectedIssueId);
+    this.log(`webview.duplicate -> ${duplicated.id}`);
+    await this.selectIssue(duplicated.id);
     await this.refreshViews();
   }
 
@@ -558,6 +572,7 @@ export class IssueDetailsViewProvider implements vscode.WebviewViewProvider {
             </section>
             <div class="actions">
               <button type="submit" id="save-issue">${issue ? 'Save issue' : 'Create issue'}</button>
+              <button type="button" id="duplicate" class="secondary"${issue ? '' : ' disabled'}>⧉ Duplicate</button>
               <button type="button" id="delete" class="secondary destructive"${issue ? '' : ' disabled'}>Delete</button>
             </div>
           </form>
@@ -574,6 +589,7 @@ const form = document.getElementById('issue-form');
 const descriptionInput = document.getElementById('description');
 const descriptionPreview = document.getElementById('description-preview');
 const deleteButton = document.getElementById('delete');
+const duplicateButton = document.getElementById('duplicate');
 const saveButton = document.getElementById('save-issue');
 const prioritySelect = document.getElementById('priority');
 const priorityDot = document.querySelector('.priority-dot');
@@ -808,6 +824,9 @@ descriptionInput.addEventListener('input', (event) => {
 });
 
 deleteButton.addEventListener('click', () => vscode.postMessage({ type: 'delete' }));
+if (duplicateButton) {
+  duplicateButton.addEventListener('click', () => vscode.postMessage({ type: 'duplicate' }));
+}
 prioritySelect.addEventListener('change', syncPriorityDot);
 `;
   }

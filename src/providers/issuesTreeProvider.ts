@@ -125,7 +125,7 @@ class IssueGroupTreeItem extends vscode.TreeItem {
   ) {
     const issues = overrideIssues ?? allIssues.filter((issue) => issue.groupId === group.id);
     super(
-      `${group.name} (${issues.length})`,
+      group.name,
       issues.length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None
     );
     this.id = group.id;

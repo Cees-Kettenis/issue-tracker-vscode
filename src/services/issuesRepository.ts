@@ -116,6 +116,27 @@ export class IssuesRepository {
     this.log(`repository.deleteGroup <- ${groupId}`);
   }
 
+  async updateGroup(groupId: string, name: string): Promise<IssueGroup> {
+    const file = await this.load();
+    const groupName = requireGroupName(name);
+    this.log(`repository.updateGroup -> ${groupId} "${groupName}"`);
+    const index = file.groups.findIndex((group) => group.id === groupId);
+
+    if (index < 0) {
+      throw new Error(`Group "${groupId}" could not be found.`);
+    }
+
+    const updated: IssueGroup = {
+      ...file.groups[index],
+      name: groupName,
+    };
+
+    file.groups[index] = updated;
+    await this.save(file);
+    this.log(`repository.updateGroup <- ${updated.id}`);
+    return updated;
+  }
+
   async createIssue(input: IssueInput): Promise<Issue> {
     const file = await this.load();
     const normalized = normalizeIssueInput(input);
@@ -211,6 +232,23 @@ export class IssuesRepository {
     const file = await this.load();
     this.log(`repository.getIssue -> ${issueId}`);
     return file.issues.find((issue) => issue.id === issueId);
+  }
+
+  async duplicateIssue(issueId: string): Promise<Issue> {
+    const current = await this.getIssue(issueId);
+    if (!current) {
+      throw new Error(`Issue "${issueId}" could not be found.`);
+    }
+
+    return this.createIssue({
+      title: current.title,
+      description: current.description,
+      groupId: current.groupId,
+      status: current.status,
+      priority: current.priority,
+      dueDate: current.dueDate,
+      personId: current.personId,
+    });
   }
 
   private async readStoreFile(

@@ -130,6 +130,40 @@ export function registerIssueCommands(
   );
 
   disposables.push(
+    vscode.commands.registerCommand('localIssues.renameGroup', async (groupTarget?: unknown) => {
+      try {
+        const resolvedGroupId = extractGroupId(groupTarget);
+        if (!resolvedGroupId || resolvedGroupId === '__ungrouped__') {
+          await vscode.window.showInformationMessage('Select a group first.');
+          return;
+        }
+
+        const file = await services.repository.load();
+        const group = file.groups.find((entry) => entry.id === resolvedGroupId);
+        if (!group) {
+          throw new Error(`Group "${resolvedGroupId}" could not be found.`);
+        }
+
+        const name = await vscode.window.showInputBox({
+          title: 'Rename group',
+          prompt: 'Enter a new group name.',
+          value: group.name,
+          ignoreFocusOut: true,
+        });
+
+        if (!name) {
+          return;
+        }
+
+        await services.repository.updateGroup(resolvedGroupId, name);
+        await services.refreshViews();
+      } catch (error) {
+        await vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      }
+    })
+  );
+
+  disposables.push(
     vscode.commands.registerCommand('localIssues.importIssues', async () => {
       try {
         const selected = await vscode.window.showOpenDialog({
@@ -199,6 +233,23 @@ export function registerIssueCommands(
       try {
         const presetGroupId = extractGroupId(target);
         await services.detailsProvider.showNewIssue(presetGroupId);
+        await services.refreshViews();
+      } catch (error) {
+        await vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));
+      }
+    })
+  );
+
+  disposables.push(
+    vscode.commands.registerCommand('localIssues.duplicateIssue', async (issueTarget?: unknown) => {
+      try {
+        const resolvedIssueId = await resolveIssueId(issueTarget, services.detailsProvider);
+        if (!resolvedIssueId) {
+          return;
+        }
+
+        const duplicated = await services.repository.duplicateIssue(resolvedIssueId);
+        await services.detailsProvider.selectIssue(duplicated.id);
         await services.refreshViews();
       } catch (error) {
         await vscode.window.showErrorMessage(error instanceof Error ? error.message : String(error));

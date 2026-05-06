@@ -2,7 +2,7 @@
   "name": "local-issues-tracker",
   "displayName": "Local Issues Tracker",
   "description": "A lightweight local issue tracker inside VS Code.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "license": "MIT",
   "icon": "media/marketplace-icon.png",
   "publisher": "CeesKettenis",
@@ -24,6 +24,7 @@
     "onCommand:localIssues.createIssue",
     "onCommand:localIssues.createGroup",
     "onCommand:localIssues.createPerson",
+    "onCommand:localIssues.renameGroup",
     "onCommand:localIssues.deleteGroup",
     "onCommand:localIssues.importIssues",
     "onCommand:localIssues.exportIssues",
@@ -33,6 +34,7 @@
     "onCommand:localIssues.setStatus",
     "onCommand:localIssues.setPriority",
     "onCommand:localIssues.deleteIssue",
+    "onCommand:localIssues.duplicateIssue",
     "onCommand:localIssues.completeIssue",
     "onCommand:localIssues.editIssue"
   ],
@@ -73,6 +75,11 @@
         "command": "localIssues.createPerson",
         "title": "Add Person",
         "icon": "$(person)"
+      },
+      {
+        "command": "localIssues.renameGroup",
+        "title": "Rename Group",
+        "icon": "$(edit)"
       },
       {
         "command": "localIssues.deleteGroup",
@@ -121,6 +128,11 @@
         "command": "localIssues.setPriority",
         "title": "Change Priority",
         "icon": "$(arrow-up)"
+      },
+      {
+        "command": "localIssues.duplicateIssue",
+        "title": "Duplicate Issue",
+        "icon": "$(copy)"
       },
       {
         "command": "localIssues.deleteIssue",
@@ -221,9 +233,15 @@
           "icon": "$(add)"
         },
         {
-          "command": "localIssues.deleteGroup",
+          "command": "localIssues.renameGroup",
           "when": "view == localIssues.tree && viewItem == localIssuesGroup",
           "group": "inline@1",
+          "icon": "$(edit)"
+        },
+        {
+          "command": "localIssues.deleteGroup",
+          "when": "view == localIssues.tree && viewItem == localIssuesGroup",
+          "group": "inline@2",
           "icon": {
             "light": "media/delete-red.svg",
             "dark": "media/delete-red.svg"
@@ -241,9 +259,21 @@
           "icon": "$(check)"
         },
         {
+          "command": "localIssues.duplicateIssue",
+          "when": "view == localIssues.tree && viewItem == localIssuesIssue",
+          "group": "inline@2",
+          "icon": "$(copy)"
+        },
+        {
           "command": "localIssues.deleteIssue",
           "when": "view == localIssues.tree && viewItem == localIssuesIssue",
-          "group": "inline@2"
+          "group": "inline@3"
+        },
+        {
+          "command": "localIssues.duplicateIssue",
+          "when": "view == localIssues.allTasks && viewItem == localIssuesAllTasksIssue",
+          "group": "inline",
+          "icon": "$(copy)"
         },
         {
           "command": "localIssues.setStatus",
@@ -258,6 +288,16 @@
         {
           "command": "localIssues.deleteIssue",
           "when": "view == localIssues.tree && viewItem == localIssuesIssue",
+          "group": "navigation"
+        },
+        {
+          "command": "localIssues.duplicateIssue",
+          "when": "view == localIssues.tree && viewItem == localIssuesIssue",
+          "group": "navigation"
+        },
+        {
+          "command": "localIssues.duplicateIssue",
+          "when": "view == localIssues.allTasks && viewItem == localIssuesAllTasksIssue",
           "group": "navigation"
         }
       ]

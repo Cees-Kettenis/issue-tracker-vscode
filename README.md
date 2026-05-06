@@ -16,9 +16,10 @@ Local Issues is a VS Code extension that keeps a lightweight issue tracker insid
 - Creating a new issue opens the details webview instead of a quick-pick flow.
 - A separate `All Tasks` tree view shows every existing issue in due-date order without group folders.
 - Groups can be created and deleted from the tree.
+- Groups can be renamed from inline tree actions.
 - People can be created once and selected from issue editors.
 - Deleting a group cascades to all issues inside it.
-- Issues can be edited, completed, and deleted from the tree or details view.
+- Issues can be edited, completed, duplicated, and deleted from the tree or details view.
 - Priority, status, due date, and assignee are visible in the details view.
 - Completed issues can be hidden from the tree.
 
@@ -47,7 +48,7 @@ Issue rows are displayed in the form:
 progress icon + priority circle + person + due date + title
 ```
 
-Group rows show the group name and issue count.
+Group rows show the group name, and the issue count appears in the row description.
 
 Dates shown in the UI use `dd/mm/yy` formatting. The JSON file still stores due dates as `YYYY-MM-DD`.
 
@@ -59,8 +60,10 @@ Available commands:
 - `Local Issues: Create Group`
 - `Local Issues: Add Person`
 - `Local Issues: Delete Group`
+- `Local Issues: Rename Group`
 - `Local Issues: Edit Issue`
 - `Local Issues: Complete Issue`
+- `Local Issues: Duplicate Issue`
 - `Local Issues: Delete Issue`
 - `Local Issues: Change Status`
 - `Local Issues: Change Priority`

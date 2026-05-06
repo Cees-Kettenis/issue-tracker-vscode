@@ -155,8 +155,8 @@ test('tree provider hides completed issues and keeps orphan issues grouped', asy
 
   const rootItems = await provider.getChildren();
   assert.equal(rootItems.length, 2);
-  assert.equal(rootItems[0].label, 'Docs (2)');
-  assert.equal(rootItems[1].label, 'Ungrouped (1)');
+  assert.equal(rootItems[0].label, 'Docs');
+  assert.equal(rootItems[1].label, 'Ungrouped');
 
   const docsChildren = await provider.getChildren(rootItems[0]);
   assert.equal(docsChildren.length, 2);

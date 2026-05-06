@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.0
+
+- Added inline group renaming from the `Issues` tree.
+- Updated group rows to remove duplicated issue counts in labels while keeping the `1 issue`/`N issues` description.
+- Added issue duplication from issue row inline actions and the details view.
+- Duplicating from details now immediately opens the duplicated issue for editing.
+
 ## 1.1.0
 
 - Added due dates to issues and kept the JSON format backward compatible with older files.
