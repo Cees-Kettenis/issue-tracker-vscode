@@ -138,7 +138,7 @@ The `issues.json` file uses a versioned JSON structure:
 ### Prerequisites
 
 - VS Code
-- Node.js 20+
+- Node.js 24+
 - Corepack enabled `pnpm`
 
 If `pnpm` is not already available, use Corepack:

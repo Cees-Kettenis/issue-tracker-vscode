@@ -4,7 +4,7 @@ Thanks for contributing to Local Issues.
 
 ## Development Setup
 
-1. Install Node.js 20+.
+1. Install Node.js 24+.
 2. Enable Corepack:
    - `corepack enable`
 3. Install dependencies:
